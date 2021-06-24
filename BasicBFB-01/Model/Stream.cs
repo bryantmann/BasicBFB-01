@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB_01.Model
+namespace BasicBFB_01
 {
 	/* Stream class
 	 *		Represents a stream going in or out of a unit operation
@@ -26,7 +26,7 @@ namespace BasicBFB_01.Model
 	 */
 
 
-	class Stream
+	public class Stream
 	{
 		public static int numComp = 10;
 		public bool isMolar { get; private set; }        // Default of false means mass basis by default
@@ -36,10 +36,10 @@ namespace BasicBFB_01.Model
 
 		public double[] x { get; set; }
 
-		public double p { get; set; }				// Pascals
-		public double T { get; set; }               // Kelvin
+		public double p { get; set; }				// bar
+		public double T { get; set; }               // °C
 
-		private double _flowrate = 0.0;     // Mass or molar flow rate (kg/s or mol/s)
+		private double _flowrate = 0.0;				// Mass or molar flow rate (kg/s or mol/s)
 		public double flowrate
 		{
 			get => _flowrate;
@@ -54,57 +54,194 @@ namespace BasicBFB_01.Model
 			}
 		}
 
+		// For notational convenience in case I get mixed up, may remove later
+		public double[] w { 
+			get => x; 
+			set => x = value; 
+		}
+
 		// This returns the avg MW of the stream ignoring Tar and Char (assumes it is 0)
 		public double avgMW
 		{
 			get 
 			{
-				double sumX = 0.0;
 				double avg = 0.0;
-				double n = numComp - 2;		// Excludes the last two components, Tar and Char
-				if (n <= 0)
+				int n = numComp - 2;        // Excludes the last two components, Tar and Char
+
+				// Copy the first numComp-2 values from x into local variable y and normalize
+				// Normalization excludes char and tar since they are mostly not gas phase
+				double[] y = gasesNormalized();
+
+				if (isMolar)
 				{
-					throw new ArgumentOutOfRangeException(
-						$"Not enough components, only {n} components left after dropping tar and char");
+					// Avg MW is the weighted sum of MW_i using normalized mole fractions
+					for (int i = 0; i < n; i++)
+					{
+						avg += y[i] * MW.all[i];
+					}
 				}
-
-				for (int i = 0; i < n; i++)
+				else
 				{
-					sumX += x[i];
+					// Calculate avg MW by summing w_i / MW_i for all i and taking inverse
+					for (int i = 0; i < n; i++)
+					{
+						avg += y[i] / MW.all[i];
+					}
+					avg = 1.0 / avg;
 				}
-
-				if (sumX <= 0.0)
-				{
-					throw new ArgumentOutOfRangeException(
-						$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
-				}
-
-
-
 
 				return avg;
 			}
-		}
-	
-		
+		}	
 
-		// Default constructor.  temp in units of Kelvin, and press in unit of Pascal
-		public Stream(double temp = 298.15, double press = 101325.0, bool isMolar = false)
+		// Default constructor.  temp in units of Celsius, and press in unit of bars
+		public Stream(double temp = 25.0, double press = 1.01325, bool isMolar = false)
+		{
+			x = new double[] {0.2, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0};  
+			this.isMolar = isMolar;
+			this.p = press;
+			this.T = temp;
+		}
+
+
+		// Alternate constructor for initializing with a known composition for x
+		// User can input newX array of any length up to value of Stream.numComp
+		public Stream(double[] newX, double temp = 25.0, double press = 1.01325, bool isMolar = false)
 		{
 			this.isMolar = isMolar;
 			this.p = press;
 			this.T = temp;
 
+			int n = newX.Length;
+			if (n > Stream.numComp)
+			{
+				n = Stream.numComp;
+			}
+
+			for (int i = 0; i < n; i++)
+			{
+				this.x[i] = newX[i];
+			}
 		}
 
 
-		//private double[] _x = new double[] {0.2, 0.2, 0.2, 0.2, 0.2,	
-		//									0.0, 0.0, 0.0, 0.0, 0.0};       // Component mass or mole fractions 
+		// Modifies the object values stored in x
+		public void normalizeGasFractions()
+		{
+			double sumX = 0.0;
+			int n = Stream.numComp - 2;        // Excludes the last two components, Tar and Char
+			if (n <= 0)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"Not enough components, only {n} components left after dropping tar and char");
+			}
 
-		//public double[] x
-		//{
-		//	get => _x;
-		//	set => _x = value;
-		//}
+			for (int i = 0; i < n; i++)
+			{
+				sumX += x[i];
+			}
+
+			if (sumX <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
+			}
+
+			for (int i = 0; i < n; i++)
+			{
+				x[i] /= sumX;
+			}
+
+			// Zero out tar and char mass fractions
+			x[n] = 0.0;
+			x[n + 1] = 0.0;
+		}
+
+		// Returns an array of length n = numComp - 2
+		public double[] gasesNormalized()
+		{
+			if (Stream.numComp < 3)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"Not enough components, only {Stream.numComp} components in Stream");
+			}
+
+			double[] y = new double[Stream.numComp];
+			double sumX = 0.0;
+			int n = Stream.numComp - 2;        // Excludes the last two components, Tar and Char
+
+			for (int i = 0; i < n; i++)
+			{
+				sumX += x[i];
+			}
+
+			if (sumX <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
+			}
+
+			for (int i = 0; i < n; i++)
+			{
+				y[i] = x[i] / sumX;
+			}
+
+			return y;
+		}
+
+
+		// Normalize all components in x including tar, char so they sum to 1.0
+		public void normalizeAllFractions()
+		{
+			double sumX = 0.0;
+			for (int i = 0; i < Stream.numComp; i++)
+			{
+				sumX += x[i];
+			}
+
+			if (sumX <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
+			}
+
+			for (int i = 0; i < Stream.numComp; i++)
+			{
+				x[i] /= sumX;
+			}
+
+		}
+
+		// Returns an array of length Stream.numComp containing normalized fractions
+		public double[] allNormalized()		{
+			if (Stream.numComp < 3)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"Not enough components, only {Stream.numComp} components in Stream");
+			}
+
+			double[] allX = new double[Stream.numComp];
+			double sumX = 0.0;
+
+			for (int i = 0; i < Stream.numComp; i++)
+			{
+				sumX += x[i];
+			}
+
+			if (sumX <= 0.0)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
+			}
+
+			for (int i = 0; i < Stream.numComp; i++)
+			{
+				allX[i] = x[i] / sumX;
+			}
+
+			return allX;
+		}
+
+
 	}
 }

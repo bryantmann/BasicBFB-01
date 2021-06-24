@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB_01.Model
+namespace BasicBFB_01
 {
 	public static class Const
 	{
@@ -47,7 +47,7 @@ namespace BasicBFB_01.Model
 		 *			9			Char	(may not be used much)
 		 */
 
-		public static double[] molWts = new double[] { MW.CO, MW.CO2, MW.CH4, MW.H2, MW.H2O,
+		public static double[] all = new double[] { MW.CO, MW.CO2, MW.CH4, MW.H2, MW.H2O,
 													   MW.N2, MW.O2, MW.H2S, 1.0, MW.Char };
 	}
 
