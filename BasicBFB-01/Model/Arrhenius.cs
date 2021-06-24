@@ -8,14 +8,14 @@ namespace BasicBFB_01
 {
 	// Arrhenius expression used to calculate rate constants vs temperature
 	// This version of the model will mainly use this for pyrolysis reactions
-	public class Arrhenius
+	static public class Arrhenius
 	{
 		// Calculates the rate constants k1-k4 characterizing biomass pyrolysis
 		// Results are returned in an array of length 4 (with k1 at index 0)
 
 		const int numRxns = 4;
 
-		public double[] pyroRateConstants(double T)
+		static public double[] pyroRateConstants(double T)
 		{
 			double[] kVals = new double[numRxns];
 			double kelvinT = T + 273.15;              // Requires T provided in °C
@@ -33,7 +33,7 @@ namespace BasicBFB_01
 
 		// The following method calculates yields from the first set of pyro reactions
 		// The Phase enumeration type is provided as one of the arguments
-		public double pyroYield(double T, Phase phi)
+		static public double pyroYield(double T, Phase phi)
 		{
 			double yield = 0.0;
 			double[] kPyro = pyroRateConstants(T);
@@ -47,10 +47,24 @@ namespace BasicBFB_01
 		}
 
 
+		// Same thing but rate constants are passed as an argument
+		static public double pyroYield(double[] kPyro, Phase phi)
+		{
+			double yield = 0.0;
+			double kx = kPyro[(int)phi];    // Value depends on choice of Phase value
+											// Enum raw values already chosen to line up
+
+			double ksum = kPyro[0] + kPyro[1] + kPyro[2];
+			yield = kx / ksum;
+
+			return yield;
+		}
+
+
 		// Method to estimate the dry elemental composition of
 		// "organic tar" that has emulsified water mixed in based on feed assay
 		// Note the input values correspond to FULLY DRY biomass (moisture subtracted)
-		public Assay wfDryTar(Assay wfBiomass)
+		static public Assay wfDryTar(Assay wfBiomass)
 		{
 			// Start by making a copy 
 			Assay wfAdjusted = wfBiomass.Clone();

@@ -24,7 +24,12 @@ namespace BasicBFB_01
 	public class Assay
 	{
 		public const int numElements = 6;
-		public double[] w { get; set; }
+		public double[] w { get; set; }             // Elemental mass fractions central to this class
+
+		public double p { get; set; }               // bar
+		public double T { get; set; }               // °C
+		public double flow { get; set; }		// Mass flow rate (might go somewhere else), kg/s
+
 
 		// --------------------------------------------------------------------------
 		// --- Next few params are used when working with PROXIMATE ANALYSIS results
@@ -79,6 +84,8 @@ namespace BasicBFB_01
 		public Assay Clone()
 		{
 			Assay wfNew = new Assay(this.w);
+			wfNew.flowrate = this.flowrate;
+
 			wfNew.fracMoisture = this.fracMoisture;
 			wfNew.fracAsh = this.fracAsh;
 			wfNew.fracVolatiles = this.fracFixedCarbon;

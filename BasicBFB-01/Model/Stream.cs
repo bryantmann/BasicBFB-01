@@ -54,11 +54,6 @@ namespace BasicBFB_01
 			}
 		}
 
-		// For notational convenience in case I get mixed up, may remove later
-		public double[] w { 
-			get => x; 
-			set => x = value; 
-		}
 
 		// This returns the avg MW of the stream ignoring Tar and Char (assumes it is 0)
 		public double avgMW
@@ -245,3 +240,11 @@ namespace BasicBFB_01
 
 	}
 }
+
+
+// For notational convenience in case I get mixed up, may remove later
+//public double[] w
+//{
+//	get => x;
+//	set => x = value;
+//}
