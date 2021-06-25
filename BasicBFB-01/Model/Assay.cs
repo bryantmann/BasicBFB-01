@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB_01
+namespace BasicBFB
 {
 	/* WtFrac Class
 	 *		Used to manage values of mass fraction of individual elements
@@ -33,11 +33,11 @@ namespace BasicBFB_01
 
 		// --------------------------------------------------------------------------
 		// --- Next few params are used when working with PROXIMATE ANALYSIS results
-		double fracMoisture { get; set; }			// In weight fraction
-		double fracAsh { get; set; }				// In weight fraction
-		double fracVolatiles { get; set; }          // In weight fraction
-		double fracFixedCarbon { get; set; }        // In weight fraction
-		double feedParticleSize { get; set; }       // Measured in µm (avg diameter)
+		public double fracMoisture { get; set; }			// In weight fraction
+		public double fracAsh { get; set; }				// In weight fraction
+		public double fracVolatiles { get; set; }          // In weight fraction
+		public double fracFixedCarbon { get; set; }        // In weight fraction
+		public double feedParticleSize { get; set; }       // Measured in µm (avg diameter)
 		// --------------------------------------------------------------------------
 		
 
@@ -58,12 +58,21 @@ namespace BasicBFB_01
 			// Initialize w so that it is of length numElements
 			this.w = new double[numElements];
 			int n = numElements;
+			this.flow = 0.0;
+			this.p = 1.01325;
+			this.T = 25.0;
+
+			fracMoisture = 0.0;
+			fracAsh = 0.0;
+			fracVolatiles = 0.0;
+			fracFixedCarbon = 0.0;
+			feedParticleSize = 0.0;
 
 			// Check if wKnown length is less than  w.  If shorter, assume wKnown has
 			// same index to element mappings
 			// If wKnown is longer than numElements, w will contain the first numElements values from wKnown
 
-			if (wKnown.Length < numElements)
+			if (wKnown.Length <= numElements)
 			{
 				n = wKnown.Length;
 			}
@@ -72,7 +81,6 @@ namespace BasicBFB_01
 			{
 				w[i] = wKnown[i];
 			}
-			Console.WriteLine("Initialized a WtFrac object from input array - {0} elements copied.", n);
 		}
 
 

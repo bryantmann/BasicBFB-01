@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB_01
+namespace BasicBFB
 {
 	public class Pyrolysis
 	{

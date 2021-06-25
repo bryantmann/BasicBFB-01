@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB_01
+namespace BasicBFB
 {
 	// Stores and communicates global conditions characterizing the system
 	public class GasifierParams
@@ -66,6 +66,7 @@ namespace BasicBFB_01
 			this.bioSource = source;
 			this.bioFeedRate = feedRate;
 			this.dFeed = dFeed;
+			this.feedIn = feedIn;
 			this.steamIn = stmIn;
 			this.sbr = sbRatio;
 		}

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB_01
+namespace BasicBFB
 {
 	/* Stream class
 	 *		Represents a stream going in or out of a unit operation
@@ -106,7 +106,8 @@ namespace BasicBFB_01
 			this.isMolar = isMolar;
 			this.p = press;
 			this.T = temp;
-
+			this.x = new double[10];
+			
 			int n = newX.Length;
 			if (n > Stream.numComp)
 			{
