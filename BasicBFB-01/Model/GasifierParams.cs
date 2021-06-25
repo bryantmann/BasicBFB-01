@@ -74,7 +74,7 @@ namespace BasicBFB_01
 		// Used to set flowrates, p and T 
 		public void setupStreams()
 		{
-			feedIn.flowrate = bioFeedRate;
+			feedIn.flow = bioFeedRate;
 			feedIn.p = this.p;
 			feedIn.T = this.T;
 			steamIn.p = this.p;		// For this model everything's constant T, P
@@ -85,7 +85,7 @@ namespace BasicBFB_01
 				return;		// Don't set rate for steamIn if there's zero wt% water
 			}
 
-			if (!steanIn.isMolar)
+			if (!steamIn.isMolar)
 			{
 				steamIn.flowrate = sbr * bioFeedRate / steamIn.x[4];        // H2O is index 4 for Strean
 			} else

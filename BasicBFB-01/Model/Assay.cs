@@ -84,7 +84,7 @@ namespace BasicBFB_01
 		public Assay Clone()
 		{
 			Assay wfNew = new Assay(this.w);
-			wfNew.flowrate = this.flowrate;
+			wfNew.flow = this.flow;
 
 			wfNew.fracMoisture = this.fracMoisture;
 			wfNew.fracAsh = this.fracAsh;

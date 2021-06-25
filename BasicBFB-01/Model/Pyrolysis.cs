@@ -71,22 +71,22 @@ namespace BasicBFB_01
 		}
 
 
-		// For a given potential solution for wt%H in wet tar, determine %C, %O
-		public Assay pyroTarAssay()
-		{
-			Assay wfWetTar = new Assay();
-			wfWetTar.T = this.T;
-			wfWetTar.p = this.p;
-			wfWetTar.flow = dryFeedIn.flow * tarYield;
-			// More code goes here
+		//// For a given potential solution for wt%H in wet tar, determine %C, %O
+		//public Assay pyroTarAssay()
+		//{
+		//	Assay wfWetTar = new Assay();
+		//	wfWetTar.T = this.T;
+		//	wfWetTar.p = this.p;
+		//	wfWetTar.flow = dryFeedIn.flow * tarYield;
+		//	// More code goes here
 
-			return wfWetTar;
-		}
+		//	return wfWetTar;
+		//}
 
 
 		// Returns mass fraction of hydrogen in cracked gas for a given value of xC
 		// From mass elemental balance.  
-		private double pyroGasH(double xC)
+		public double pyroGasH(double xC)
 		{
 			Assay dryTarGas = gasFromOrganicTar();
 			double sumK = kPyros[0] + kPyros[1] + kPyros[2];
@@ -99,7 +99,7 @@ namespace BasicBFB_01
 
 			termsA[0] = 1.0;
 			termsA[1] = -xC;
-			termsA[2] = sumK * kPyros[1] / kPyros[0];
+			termsA[2] = dryTarGas.w[2] * kPyros[1] / kPyros[0];
 			termsA[3] = -sumK * dryFeedIn.w[2] / kPyros[0];
 
 			// The last term is large and can be grouped into factors and subterms
@@ -108,14 +108,14 @@ namespace BasicBFB_01
 			termsB[2] = kPyros[2];
 
 			double sumBTerms = 0.0;
-			foreach (double term in termsB)
+			foreach (double tB in termsB)
 			{
-				sumBTerms += term;
+				sumBTerms += tB;
 			}
 
 			factors[0] = kPyros[1] / kPyros[1];
-			factors[1] = (MW.O / MW.H2O) - sumK;
-			factors[2] = 1.0 - (1.0 / (kPyros[1] * sumK)) * sumBTerms;
+			factors[1] = (MW.O / MW.H2O) - dryTarGas.w[2];
+			factors[2] = 1.0 - (1.0 / (kPyros[1] * dryTarGas.w[1])) * sumBTerms;
 
 			// Now combine everything
 			termsA[4]= factors[0] * factors[1] * factors[2];
@@ -130,7 +130,7 @@ namespace BasicBFB_01
 
 		// Returns mass fraction of carbon in cracked gas for a given value of xH
 		// From mass elemental balance.  Will cross-check these two methods
-		private double pyroGasC(double xH)
+		public double pyroGasC(double xH)
 		{
 			Assay dryTarGas = gasFromOrganicTar();
 			double sumK = kPyros[0] + kPyros[1] + kPyros[2];
@@ -143,11 +143,28 @@ namespace BasicBFB_01
 
 			termsA[0] = 1.0;
 			termsA[1] = -xH;
-			termsA[2] = sumK * kPyros[1] / kPyros[0];
+			termsA[2] = dryTarGas.w[2] * kPyros[1] / kPyros[0];
 			termsA[3] = -sumK * dryFeedIn.w[2] / kPyros[0];
-			
+
 			// Last term is huge, break into pieces
-			factors[0] = ( (MW.O / MW.H2O) - sumK) / ((MW.H / MW.H2O)
+			termsB[0] = sumK * dryFeedIn.w[0];
+			termsB[1] = -xH * kPyros[0];
+			termsB[2] = -kPyros[1] * dryTarGas.w[0];
+
+			factors[0] = 0.0;
+			foreach (double tB in termsB)
+			{
+				factors[0] += tB;
+			}
+
+			factors[1] = (MW.O / MW.H2O) - dryTarGas.w[2];
+			factors[1] /= kPyros[0] * ((MW.H / MW.H2O) - dryTarGas.w[0]);
+			termsA[4] = factors[0] + factors[1];
+
+			foreach (double tA in termsA)
+			{
+				xC += tA;
+			}
 
 			return xC;
 		}
