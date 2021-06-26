@@ -12,9 +12,14 @@ namespace BasicBFB
 			CrossCheck tester = new CrossCheck(p);
 
 			tester.calcGasFracs();
-			tester.printComparisons();
 
-			Console.WriteLine("\n\t\t\t\t- FIN -");
+			// Arbitraty path for file
+			string filepath = @"C:\Users\Bryan\temp\gasData.csv";
+			string csvData = tester.dataToCSV();
+
+			Utilities.saveTextAs(csvData, filepath);
+
+			Console.WriteLine("File saved to bryan's temp directory as gasData.csv");
 			Console.ReadKey();
 		}
 	}

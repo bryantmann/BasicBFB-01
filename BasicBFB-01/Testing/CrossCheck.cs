@@ -24,7 +24,9 @@ namespace BasicBFB.Testing
 
 		const int numComp = 3;
 		const double wHmax = 0.25;
-		public int numPoints { get; set; } = 100;
+		public const int numPoints = 100;
+		double[] rangeC = { 0.3, 0.7 };
+
 
 
 		// --------------------------------------------------------------------------
@@ -43,19 +45,36 @@ namespace BasicBFB.Testing
 			this.constraints[1] = new double[numPoints, numComp];
 
 			// Fill in values of wH that span range from 0 to 0.25
-			const double deltaH = wHmax / ((double)numComp);
-			double wHtemp = 0.0;
-			for (int i = 0; i < numPoints; i++)
-			{
-				wHtemp += deltaH;
-				gasFromH[i, 0] = 0.0;       // Carbon to be calculated
-				gasFromH[i, 1] = wHtemp;
-				gasFromH[i, 2] = 0.0;       // Oxygen, same deal
+			// Get started with the first row before entering the loop
+			const double deltaH = wHmax / ((double)numPoints);
+			//gasFromH[0, 0] = 0.0;
+			gasFromH[0, 1] = deltaH;
+			//gasFromH[0, 2] = 0.0;
 
-				constraints[0][i, 1] = wHtemp;
-				constraints[1][i, 1] = wHtemp;
+			for (int i = 1; i < numPoints; i++)
+			{
+				//gasFromH[i, 0] = 0.0;       // Carbon to be calculated
+				gasFromH[i, 1] = gasFromH[i - 1, 1] + deltaH;
+				//gasFromH[i, 2] = 0.0;       // Oxygen, same deal
+
+				constraints[0][i, 1] = gasFromH[i, 1];
+				constraints[1][i, 1] = gasFromH[i, 1];
 			}
+
+			// Setup test values for wC in gasFromC[i, 0]
+			double wCspan = rangeC[1] - rangeC[0];
+			double deltaC = wCspan / ((double)numPoints);
+			gasFromC[0, 0] = rangeC[0] + deltaC;
+			for (int i = 1; i < numPoints; i++)
+			{
+				gasFromC[i, 0] = gasFromC[i - 1, 0] + deltaC;
+			}
+
 		}
+
+		// --------------------------------------------------------------------------
+		// -------------------------------- METHODS ---------------------------------
+		// --------------------------------------------------------------------------
 
 		public void calcGasFracs()
 		{
@@ -64,8 +83,8 @@ namespace BasicBFB.Testing
 				gasFromH[i, 0] = pyro.pyroGasC(gasFromH[i, 1]);
 				gasFromH[i, 2] = 1.0 - gasFromH[i, 0] - gasFromH[i, 1];
 
-				// Use same values of carbon for cross-checks
-				gasFromC[i, 0] = gasFromH[i, 0];
+				// Uncomment the 2nd line below to use calculated carbon values from H
+				//gasFromC[i, 0] = gasFromH[i, 0];
 				gasFromC[i, 1] = pyro.pyroGasH(gasFromC[i, 0]);
 				gasFromC[i, 2] = 1.0 - gasFromC[i, 0] - gasFromC[i, 1];
 			}
@@ -175,7 +194,7 @@ namespace BasicBFB.Testing
 			double[] rmsd = eqnRMSD(gasFromH, gasFromC);
 			double[] wH = new double[numPoints];
 
-			const double deltaH = wHmax / ((double)numComp);
+			const double deltaH = wHmax / ((double)numPoints);
 			wH[0] = deltaH;
 			for (int i = 1; i < numPoints; i++)
 			{
@@ -190,20 +209,58 @@ namespace BasicBFB.Testing
 			for (int i = 0; i < numPoints; i++)
 			{
 				string ln = "  " + i.ToString() + "\t\t";
-				ln += wH[i].ToString() + "\t\t";
-				ln += dx[i, 0].ToString() + "\t";
-				ln += dx[i, 1].ToString() + "\t";
-				ln += dx[i, 2].ToString();
+				ln += wH[i].ToString("G3") + "\t";
+				ln += dx[i, 0].ToString("G3") + "\t";
+				ln += dx[i, 1].ToString("G3") + "\t";
+				ln += dx[i, 2].ToString("G3");
 				Console.WriteLine(ln);
 			}
 
 			string ln2 = "\nOverall RMSDs:\t\t";
-			ln2 += "C: " + rmsd[0].ToString() + "  ";
-			ln2 += "H: " + rmsd[1].ToString() + "  ";
-			ln2 += "O: " + rmsd[2].ToString() + "\n";
+			ln2 += "C: " + rmsd[0].ToString("G3") + "  ";
+			ln2 += "H: " + rmsd[1].ToString("G3") + "  ";
+			ln2 += "O: " + rmsd[2].ToString("G3") + "\n";
 			Console.WriteLine(ln2);
 			Console.WriteLine(line);
 			Console.WriteLine();
+		}
+
+
+		// Returns a big string with gasFromH and gasFromC arranged side by side
+		public string dataToCSV()
+		{
+			string str = "";
+
+			// Header line
+			str += "C (via H)," + "H," + "O	(via H),";
+			str += ",";		// empty column
+			str += "C," + "H (via C)," + "O (via C)" + "\n";
+
+			// Populate data
+			for (int i = 0; i < numPoints; i++)
+			{
+				string line = "";
+				// gasFromH
+				for (int j = 0; j < numComp; j++)
+				{
+					line += gasFromH[i, j] + ",";
+				}
+
+				line += ",";	// blank column
+
+				// gasFromC
+				for (int j = 0; j < numComp; j++)
+				{
+					line += gasFromC[i, j] + ",";
+				}
+				line += "\n";
+				str += line;
+			}
+
+			// Include more stuff, separated by blank lines
+			str += "\n\n" + pyro.dryFeedIn.dataToCSV();
+
+			return str;
 		}
 
 

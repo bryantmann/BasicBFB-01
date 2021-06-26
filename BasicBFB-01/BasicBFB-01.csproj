@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>BasicBFB_01</RootNamespace>
+    <RootNamespace>BasicBFB</RootNamespace>
     <ApplicationIcon>satan_icon.ico</ApplicationIcon>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>

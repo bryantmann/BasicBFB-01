@@ -14,7 +14,7 @@ namespace BasicBFB.Testing
 		// Creates an Assay object for "sawdust" biomass feed
 		public static Assay sawdustAssay()
 		{
-			double[] w = new double[6] { 0.425, 0.063, 0.51, 0.2, 0.0, 0.012 };
+			double[] w = new double[6] { 0.425, 0.063, 0.51, 0.002, 0.0, 0.012 };
 			Assay assay = new Assay(w);
 			assay.fracMoisture = 0.085;
 			assay.fracAsh = 0.012;
@@ -46,6 +46,8 @@ namespace BasicBFB.Testing
 			GasifierParams p = new GasifierParams();
 
 			Assay sawdust = sawdustAssay();
+			sawdust.name = "Sawdust";
+
 			Stream steam = pureSteam();
 
 			p.setVesselParams(T: 750.0, p: 1.115, dBed: 0.15, dFree: 0.15, Ltot: 1.2);

@@ -33,6 +33,7 @@ namespace BasicBFB
 			this.param = param;			// Reference copy - single class instance for param
 			this.T = param.T;
 			this.dryFeedIn = param.feedIn.cleanedAndDried();
+			this.dryFeedIn.name = param.feedIn.name + " (dry)";
 
 			this.kPyros = Arrhenius.pyroRateConstants(param.T);
 			this.gasYield = Arrhenius.pyroYield(kPyros, Phase.Gas);
@@ -70,60 +71,50 @@ namespace BasicBFB
 			return wfDryTar;
 		}
 
-
-		//// For a given potential solution for wt%H in wet tar, determine %C, %O
-		//public Assay pyroTarAssay()
-		//{
-		//	Assay wfWetTar = new Assay();
-		//	wfWetTar.T = this.T;
-		//	wfWetTar.p = this.p;
-		//	wfWetTar.flow = dryFeedIn.flow * tarYield;
-		//	// More code goes here
-
-		//	return wfWetTar;
-		//}
+		public double[] organicTarMassFrac()
+		{
+			double[] xDryTar = new double[3];
+			xDryTar[0] = 1.14 * dryFeedIn.w[0];
+			xDryTar[1] = 1.13 * dryFeedIn.w[1];
+			xDryTar[2] = 1.0 - xDryTar[0] - xDryTar[1];
+			return xDryTar;
+		}
 
 
 		// Returns mass fraction of hydrogen in cracked gas for a given value of xC
 		// From mass elemental balance.  
 		public double pyroGasH(double xC)
 		{
-			Assay dryTarGas = gasFromOrganicTar();
-			double sumK = kPyros[0] + kPyros[1] + kPyros[2];
+			double[] phi = organicTarMassFrac();
+			double S = kPyros[0] + kPyros[1] + kPyros[2];
+			double[] alpha = new double[3];			// Mass fractions of C, H, O in H2O
+			alpha[0] = 0.0;
+			alpha[2] = MW.O / MW.H2O;
+			alpha[1] = 1.0 - alpha[2];
+
+			double[] beta = new double[3];          // Mass fractions in dry, clean feed
+			Array.Copy(dryFeedIn.w, 0, beta, 0, 3);
+
+			double eta = (alpha[2] - phi[2]) / phi[0];
+
+			// Temporary storage array to simplify code
+			double[] terms = new double[6];
+			terms[0] = 1.0;
+			terms[1] = -xC;
+			terms[2] = -beta[2] * S / kPyros[0];
+			terms[3] = phi[2] * kPyros[1] / kPyros[0];
+
+			terms[4] = beta[0] * S - kPyros[0] * xC - kPyros[2];
+			terms[4] *= -eta / kPyros[1];
+
+			terms[5] = phi[0] * kPyros[1] / kPyros[0];
+				
 			double xH = 0.0;
-
-			// Break giant formula up into pieces
-			double[] termsA = new double[5];
-			double[] termsB = new double[3];
-			double[] factors = new double[3];
-
-			termsA[0] = 1.0;
-			termsA[1] = -xC;
-			termsA[2] = dryTarGas.w[2] * kPyros[1] / kPyros[0];
-			termsA[3] = -sumK * dryFeedIn.w[2] / kPyros[0];
-
-			// The last term is large and can be grouped into factors and subterms
-			termsB[0] = sumK * dryFeedIn.w[0];
-			termsB[1] = -kPyros[0] * xC;
-			termsB[2] = kPyros[2];
-
-			double sumBTerms = 0.0;
-			foreach (double tB in termsB)
+			foreach (double t in terms)
 			{
-				sumBTerms += tB;
+				xH += t;
 			}
 
-			factors[0] = kPyros[1] / kPyros[1];
-			factors[1] = (MW.O / MW.H2O) - dryTarGas.w[2];
-			factors[2] = 1.0 - (1.0 / (kPyros[1] * dryTarGas.w[1])) * sumBTerms;
-
-			// Now combine everything
-			termsA[4]= factors[0] * factors[1] * factors[2];
-
-			foreach (double tA in termsA)
-			{
-				xH += tA;
-			}
 			return xH;
 		}
 
@@ -132,38 +123,33 @@ namespace BasicBFB
 		// From mass elemental balance.  Will cross-check these two methods
 		public double pyroGasC(double xH)
 		{
-			Assay dryTarGas = gasFromOrganicTar();
-			double sumK = kPyros[0] + kPyros[1] + kPyros[2];
+			double[] phi = organicTarMassFrac();
+			double S = kPyros[0] + kPyros[1] + kPyros[2];
+			double[] alpha = new double[3];         // Mass fractions of C, H, O in H2O
+			alpha[0] = 0.0;
+			alpha[2] = MW.O / MW.H2O;
+			alpha[1] = 1.0 - alpha[2];
+
+			double[] beta = new double[3];          // Mass fractions in dry, clean feed
+			//Array.Copy(dryFeedIn.w, 0, beta, 0, 3);
+
+			double gamma = (alpha[2] - phi[2]) / (alpha[1] - phi[1]);
+
+			double[] terms = new double[6];
+			terms[0] = 1.0;
+			terms[1] = -xH;
+			terms[2] = -phi[2] * kPyros[1] / kPyros[0];
+			terms[3] = -beta[2] * S / kPyros[0];
+
+			terms[4] = beta[1] * S - kPyros[0] * xH;
+			terms[4] *= gamma / kPyros[0];
+
+			terms[5] = -gamma * phi[1] * kPyros[1] / kPyros[0];
+
 			double xC = 0.0;
-
-			// Break this other giant formula into different pieces
-			double[] termsA = new double[5];
-			double[] termsB = new double[3];
-			double[] factors = new double[2];
-
-			termsA[0] = 1.0;
-			termsA[1] = -xH;
-			termsA[2] = dryTarGas.w[2] * kPyros[1] / kPyros[0];
-			termsA[3] = -sumK * dryFeedIn.w[2] / kPyros[0];
-
-			// Last term is huge, break into pieces
-			termsB[0] = sumK * dryFeedIn.w[0];
-			termsB[1] = -xH * kPyros[0];
-			termsB[2] = -kPyros[1] * dryTarGas.w[0];
-
-			factors[0] = 0.0;
-			foreach (double tB in termsB)
+			foreach (double t in terms)
 			{
-				factors[0] += tB;
-			}
-
-			factors[1] = (MW.O / MW.H2O) - dryTarGas.w[2];
-			factors[1] /= kPyros[0] * ((MW.H / MW.H2O) - dryTarGas.w[0]);
-			termsA[4] = factors[0] + factors[1];
-
-			foreach (double tA in termsA)
-			{
-				xC += tA;
+				xC += t;
 			}
 
 			return xC;

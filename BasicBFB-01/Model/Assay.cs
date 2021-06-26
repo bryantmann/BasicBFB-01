@@ -23,6 +23,7 @@ namespace BasicBFB
 
 	public class Assay
 	{
+		public string name { get; set; } = "Assay X";
 		public const int numElements = 6;
 		public double[] w { get; set; }             // Elemental mass fractions central to this class
 
@@ -86,6 +87,7 @@ namespace BasicBFB
 
 		// --------------------------------------------------------------------------
 		// -------------------------------- METHODS ---------------------------------
+		// --------------------------------------------------------------------------
 
 		// This one makes a deep copy.  Since numElements is const,
 		// we don't have to count elements in arrays
@@ -196,5 +198,62 @@ namespace BasicBFB
 			wfClean.segregatedCHO();
 			return wfClean;
 		}
+
+
+		// --------------------------------------------------------------------------
+		// -------------------------------- FOR EXPORTS -----------------------------
+		// --------------------------------------------------------------------------
+
+		// Returns the object's stored properties arranged in a csv table for export
+		public string dataToCSV()
+		{
+			string csv = "";
+
+			string label = name + "," + "," + "Assay object" + "\n";
+			string headerRow = "Element," + "wt frac," + ",";
+			headerRow += "Property,Value" + "\n";
+			csv = label + "\n" + headerRow;
+
+			string[] elements = new string[6] { "C", "H", "O", "N", "S", "X" };
+
+			string[] propertyNames = new string[8]{ "P", "T", "Flow",
+														"moisture", "ash", "volatiles",
+														"fixed C", "Size"};
+
+			string[] values = new string[8]; 
+			values[0] = p.ToString();
+			values[1] = T.ToString();
+			values[2] = flow.ToString();
+			values[3] = fracMoisture.ToString();
+			values[4] = fracAsh.ToString();
+			values[5] = fracVolatiles.ToString();
+			values[6] = fracFixedCarbon.ToString();
+			values[7] = feedParticleSize.ToString();
+
+
+
+			for (int i = 0; i < propertyNames.Length; i++)
+			{
+				string line = "";
+
+				if (i < elements.Length)
+				{
+					line += elements[i] + "," + w.ToString() + ",";
+				}
+				else
+				{
+					line += ",,";
+				}
+
+				line += ",";
+				line += propertyNames[i] + "," + values[i] + "\n";
+
+				csv += line;
+			}
+			return csv;
+		}
+
+
+
 	}
 }

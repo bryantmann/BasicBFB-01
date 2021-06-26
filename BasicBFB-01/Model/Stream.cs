@@ -30,10 +30,6 @@ namespace BasicBFB
 	{
 		public static int numComp = 10;
 		public bool isMolar { get; private set; }        // Default of false means mass basis by default
-
-		// ----------------------------------------------------------------------
-		
-
 		public double[] x { get; set; }
 
 		public double p { get; set; }				// bar
@@ -53,6 +49,35 @@ namespace BasicBFB
 				_flowrate = value;
 			}
 		}
+
+		static public string[] componentNames = new string[10] { "CO", "CO2", "CH4", "H2",
+																"H2O", "N2", "O2", "H2S",
+																"Tar", "Char" };
+
+		// --------------------------------------------------------------------------
+
+		// Returns the object's stored properties arranged in a csv table for export
+		public string dataToCSV(string name)
+		{
+			string csv = "";
+			string label = name + "," + "," + "Stream object" + "\n";
+			string headerRow = "Species," + "wt frac" + "\n";
+			csv += label + "\n" + headerRow;
+
+			// Tabulate contents of x
+			for (int i = 0; i < numComp; i++)
+			{
+				csv += componentNames[i] + "," + x.ToString() + "\n";
+			}
+
+			return csv;
+		}
+
+
+
+		// --------------------------------------------------------------------------
+		// -------------------------------- METHODS ---------------------------------
+		// --------------------------------------------------------------------------
 
 
 		// This returns the avg MW of the stream ignoring Tar and Char (assumes it is 0)
