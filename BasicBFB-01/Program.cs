@@ -8,6 +8,8 @@ namespace BasicBFB
 	{
 		static void Main(string[] args)
 		{
+			// TODO: Upload to Github server ASAP!!
+
 			GasifierParams p = ExampleData.gasifierParams();
 			CrossCheck tester = new CrossCheck(p);
 

@@ -12,17 +12,21 @@ namespace BasicBFB
 		public double T { get; private set; }
 		public Assay dryFeedIn { get; private set; }
 
-		public double[] kPyros { get; private set; }	// All four [=] 1/sec
+		public double[] kPyros { get; private set; }    // All four [=] 1/sec
+		public double[] phis { get; private set; }      // Dry organic tar mass fractions (n = 3)
+		public double[] alphas { get; init; }           // Pyrolysis water mass fractions (n = 3)
+
+		public double[] gasHrange { get; } = { 0.04, 0.105 };	// From gas stoichometry constraints
+		
 		public double gasYield { get; private set; }	// Yields are wt/wt dry biomass
 		public double tarYield { get; private set; }
 		public double charYield { get; private set; }
 
 
+
 		public Stream dryGasOut { get; private set; }	
-		public Stream wetGasOut { get; private set; }   // Steam, N2, O2, H2S
+		public Stream badGasOut { get; private set; }   // Steam, N2, O2, H2S
 		public Assay tarOut { get; private set; }		// Assay on Wet basis
-		public Assay charOut { get; private set; }		// Char assay without ash
-		public Assay ashesOut { get; private set; }
 
 		// TODO: Be sure to adjust dry feed rate down after cleanup and dryout
 
@@ -45,14 +49,18 @@ namespace BasicBFB
 			this.charYield = Arrhenius.pyroYield(kPyros, Phase.Char);
 
 			this.dryGasOut = new Stream(param.T, param.p);		// Mass fraction basis
-			this.wetGasOut = new Stream(param.T, param.p);
+			this.badGasOut = new Stream(param.T, param.p);
 			
 			this.tarOut = new Assay();
 			tarOut.p = param.p;
 			tarOut.T = param.T;
 
-			this.charOut = tarOut.Clone();
-			this.ashesOut = tarOut.Clone();
+			phis = organicTarMassFrac();
+
+			alphas = new double[3];				
+			alphas[0] = 0.0;
+			alphas[1] = 2 * MW.H / MW.H2O;
+			alphas[2] = MW.O / MW.H2O;
 		}
 
 
@@ -60,20 +68,6 @@ namespace BasicBFB
 		// -------------------------------- Methods ---------------------------------
 		// --------------------------------------------------------------------------
 
-		// Dry, organic Tar composition
-		public Assay gasFromOrganicTar()
-		{
-			double[] xDryTar = new double[3];
-			xDryTar[0] = 1.14 * dryFeedIn.w[0];
-			xDryTar[1] = 1.13 * dryFeedIn.w[1];
-			xDryTar[2] = 1.0 - xDryTar[0] - xDryTar[1];
-			
-			Assay wfDryTar = new Assay(xDryTar);
-			wfDryTar.T = this.T;
-			wfDryTar.p = this.T;
-			
-			return wfDryTar;
-		}
 
 		public double[] organicTarMassFrac()
 		{
@@ -84,6 +78,66 @@ namespace BasicBFB
 			return xDryTar;
 		}
 
+
+		// Calculates the tar mass fraction of the specified element
+		// based on its mass fraction in the tar (passed as argument wG)
+		double tarFracFromGas(Element element, double wG)
+		{
+			double wB = dryFeedIn.w[(int)element];
+			double wC = (int)element == 0 ? 1.0 : 0.0;
+
+			double wT = (kPyros[0] + kPyros[1] + kPyros[2]) * wB;
+			wT = wT - kPyros[0] * wG - kPyros[2] * wC;
+			wT /= kPyros[1];
+
+			return wT;
+		}
+
+
+		double tarFracFronTar(Element element, double wHtar)
+		{
+			// Element specific values are singular nouns
+			double phi = phis[(int)element];
+			double alpha = alphas[(int)element];
+
+			double wT = phi - (alpha - phi) * (wHtar - phis[1]) / (alphas[1] - phis[1]);
+			return wT;
+		}
+
+
+		// MARK: - The Main Event ---------------------------------------------------------
+
+		// For root finding algorithm use
+		// Given a value for wHgas, calculate tar CHO values.  Target is for sum = 1.000
+		// This method returns the difference of that sum from 1.0 (target zero difference)
+		double tarBalance(double wHgas)
+		{
+			double[] wTar = new double[3];
+
+			// Calculate tar hydrogen from gas H
+			wTar[1] = tarFracFromGas(Element.H, wHgas);
+
+			// Next calculate tar %C and %O from tar %H
+			wTar[0] = tarFracFronTar(Element.C, wTar[1]);
+			wTar[2] = tarFracFronTar(Element.O, wTar[1]);
+
+			// Add them up and subtract from 1.0 to return result of balance
+			double sum = 0.0;
+			foreach (double w in wTar)
+			{
+				sum += w;
+			}
+
+			return 1.0 - sum;
+		}
+
+
+
+
+
+
+		// --------------------------------------------------------------------------------
+		// TODO - Get rid of pyroGasH(xC) and pyroGasC(xH), they suck.
 
 		// Returns mass fraction of hydrogen in cracked gas for a given value of xC
 		// From mass elemental balance.  
