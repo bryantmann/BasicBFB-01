@@ -24,6 +24,10 @@ namespace BasicBFB
 		public Assay charOut { get; private set; }		// Char assay without ash
 		public Assay ashesOut { get; private set; }
 
+		// TODO: Be sure to adjust dry feed rate down after cleanup and dryout
+
+
+
 		// --------------------------------------------------------------------------
 		// -------------------------- Constructors, etc -----------------------------
 		// --------------------------------------------------------------------------

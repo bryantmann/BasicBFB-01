@@ -94,8 +94,8 @@ namespace BasicBFB
 		public Assay Clone()
 		{
 			Assay wfNew = new Assay(this.w);
+			
 			wfNew.flow = this.flow;
-
 			wfNew.fracMoisture = this.fracMoisture;
 			wfNew.fracAsh = this.fracAsh;
 			wfNew.fracVolatiles = this.fracFixedCarbon;
@@ -163,7 +163,7 @@ namespace BasicBFB
 		{
 			// Since w[i] sums to 1, assume total mass of aliquot is 1.0 gram
 			// This makes wtFrac values agree with pretend masses removed from "sample
-			Assay dryWtFrac = this.Clone();
+			//Assay dryWtFrac = this.Clone();
 			double mH2O = this.fracMoisture;
 			double mHRemoved = mH2O * 2.0 * MW.H / MW.H2O;
 			double mORemoved = mH2O - mHRemoved;
@@ -179,7 +179,8 @@ namespace BasicBFB
 			if (this.w[2] < 0.0) { this.w[2] = 0.0; }
 
 			// Normalize both proximate and ultimate analysis values
-			dryWtFrac.normalize();
+			//dryWtFrac.normalize();
+			this.normalize();
 			double wetProx = mH2O + this.fracAsh + this.fracVolatiles + this.fracFixedCarbon;
 			double dryProx = wetProx - mH2O;
 			double factor = wetProx / dryProx;
@@ -195,9 +196,17 @@ namespace BasicBFB
 		{
 			Assay wfClean = this.normalized();
 			wfClean.fullyDry();
-			wfClean.segregatedCHO();
+			wfClean.removeNonCHO();
 			return wfClean;
 		}
+
+
+		//public static Assay cleanAndDry(Assay raw)
+		//{
+		//	Assay dry = new Assay();
+
+
+		//}
 
 
 		// --------------------------------------------------------------------------
@@ -238,7 +247,7 @@ namespace BasicBFB
 
 				if (i < elements.Length)
 				{
-					line += elements[i] + "," + w.ToString() + ",";
+					line += elements[i] + "," + w[i] + ",";
 				}
 				else
 				{

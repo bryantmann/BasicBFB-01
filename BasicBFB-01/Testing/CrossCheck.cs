@@ -258,7 +258,11 @@ namespace BasicBFB.Testing
 			}
 
 			// Include more stuff, separated by blank lines
-			str += "\n\n" + pyro.dryFeedIn.dataToCSV();
+			str += "\n\n";
+			
+			string dryFeedAssay = pyro.dryFeedIn.dataToCSV();
+
+			str += dryFeedAssay;
 
 			return str;
 		}
