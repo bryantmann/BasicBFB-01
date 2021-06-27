@@ -55,64 +55,9 @@ namespace BasicBFB
 																"Tar", "Char" };
 
 		// --------------------------------------------------------------------------
-
-		// Returns the object's stored properties arranged in a csv table for export
-		public string dataToCSV(string name)
-		{
-			string csv = "";
-			string label = name + "," + "," + "Stream object" + "\n";
-			string headerRow = "Species," + "wt frac" + "\n";
-			csv += label + "\n" + headerRow;
-
-			// Tabulate contents of x
-			for (int i = 0; i < numComp; i++)
-			{
-				csv += componentNames[i] + "," + x.ToString() + "\n";
-			}
-
-			return csv;
-		}
-
-
-
+		// ---------------------------- CONSTRUCTORS --------------------------------
 		// --------------------------------------------------------------------------
-		// -------------------------------- METHODS ---------------------------------
-		// --------------------------------------------------------------------------
-
-
-		// This returns the avg MW of the stream ignoring Tar and Char (assumes it is 0)
-		public double avgMW
-		{
-			get 
-			{
-				double avg = 0.0;
-				int n = numComp - 2;        // Excludes the last two components, Tar and Char
-
-				// Copy the first numComp-2 values from x into local variable y and normalize
-				// Normalization excludes char and tar since they are mostly not gas phase
-				double[] y = gasesNormalized();
-
-				if (isMolar)
-				{
-					// Avg MW is the weighted sum of MW_i using normalized mole fractions
-					for (int i = 0; i < n; i++)
-					{
-						avg += y[i] * MW.all[i];
-					}
-				}
-				else
-				{
-					// Calculate avg MW by summing w_i / MW_i for all i and taking inverse
-					for (int i = 0; i < n; i++)
-					{
-						avg += y[i] / MW.all[i];
-					}
-					avg = 1.0 / avg;
-				}
-
-				return avg;
-			}
-		}	
+			
 
 		// Default constructor.  temp in units of Celsius, and press in unit of bars
 		public Stream(double temp = 25.0, double press = 1.01325, bool isMolar = false)
@@ -146,7 +91,43 @@ namespace BasicBFB
 		}
 
 
-		// Modifies the object values stored in x
+		// --------------------------------------------------------------------------
+		// -------------------------------- METHODS ---------------------------------
+		// --------------------------------------------------------------------------
+
+
+
+
+		public void setX(double[] newX)
+		{
+			int n = newX.Length;
+			double sum = 0.0;
+
+			if (n > Stream.numComp)
+			{
+				n = Stream.numComp;
+			}
+
+			for (int i = 0; i < n; i++)
+			{
+				this.x[i] = newX[i];
+				sum += x[i];
+			}
+
+			if (x.Length > newX.Length)
+			{
+				// Backfill last elements with zeros
+				for (int i = newX.Length; i < x.Length; i++)
+				{
+					this.x[i] = 0.0;
+				}
+			}
+
+		}
+
+		// TODO: Trim unused methods and properties, starting in Stream
+
+
 		public void normalizeGasFractions()
 		{
 			double sumX = 0.0;
@@ -233,6 +214,7 @@ namespace BasicBFB
 
 		}
 
+
 		// Returns an array of length Stream.numComp containing normalized fractions
 		public double[] allNormalized()		{
 			if (Stream.numComp < 3)
@@ -264,13 +246,84 @@ namespace BasicBFB
 		}
 
 
+		// Checks if the sum if X equals 1.0 within a tolerance NORM_TOL
+		public bool isNormalized()
+		{
+			bool normal;
+			double d = 1.0 - sumX();
+			normal = Math.Abs(d) < Const.NORM_TOL;
+			return normal;
+		}
+
+		public double sumX()
+		{
+			double sum = 0.0;
+			foreach (double xi in x)
+			{
+				sum += xi;
+			}
+			return sum;
+		}
+
+
+		// Returns the object's stored properties arranged in a csv table for export
+		public string dataToCSV(string name)
+		{
+			string csv = "";
+			string label = name + "," + "," + "Stream object" + "\n";
+			string headerRow = "Species," + "wt frac" + "\n";
+			csv += label + "\n" + headerRow;
+
+			// Tabulate contents of x
+			for (int i = 0; i < numComp; i++)
+			{
+				csv += componentNames[i] + "," + x.ToString() + "\n";
+			}
+
+			return csv;
+		}
+
+
+		// --------------------------------------------------------------------------
+		// ---------------------Computed Properties ---------------------------------
+		// --------------------------------------------------------------------------
+
+
+		// This returns the avg MW of the stream ignoring Tar and Char (assumes it is 0)
+		public double avgMW
+		{
+			get
+			{
+				double avg = 0.0;
+				int n = numComp - 2;        // Excludes the last two components, Tar and Char
+
+				// Copy the first numComp-2 values from x into local variable y and normalize
+				// Normalization excludes char and tar since they are mostly not gas phase
+				double[] y = gasesNormalized();
+
+				if (isMolar)
+				{
+					// Avg MW is the weighted sum of MW_i using normalized mole fractions
+					for (int i = 0; i < n; i++)
+					{
+						avg += y[i] * MW.all[i];
+					}
+				}
+				else
+				{
+					// Calculate avg MW by summing w_i / MW_i for all i and taking inverse
+					for (int i = 0; i < n; i++)
+					{
+						avg += y[i] / MW.all[i];
+					}
+					avg = 1.0 / avg;
+				}
+
+				return avg;
+			}
+		}
+
+
 	}
 }
 
-
-// For notational convenience in case I get mixed up, may remove later
-//public double[] w
-//{
-//	get => x;
-//	set => x = value;
-//}

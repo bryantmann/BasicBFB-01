@@ -9,7 +9,8 @@ namespace BasicBFB
 	public static class Const
 	{
 		public const double pi = 3.1415926535897932384626433832795028841971693993751;
-		public const double Rgas = 8.31446261815324;	// J / mol.K
+		public const double Rgas = 8.31446261815324;    // J / mol.K
+		public const double NORM_TOL = 1.0e-7;			// Normalized enough?
 	}
 
 

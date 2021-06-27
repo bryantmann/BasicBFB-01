@@ -26,14 +26,14 @@ namespace BasicBFB
             this.value2 = value2;
         }
 
-        public NotConvergedException(int value1, int value2, string message)
+        public NotConvergedException(double value1, double value2, string message)
            : base(message)
         {
             this.value1 = value1;
             this.value2 = value2;
         }
 
-        public NotConvergedException(int value, string message, Exception innerException) :
+        public NotConvergedException(double value, string message, Exception innerException) :
            base(message, innerException)
         {
             value1 = value;
@@ -59,4 +59,47 @@ namespace BasicBFB
             get { return (value1, value2); }
 		}
     }
+
+
+    // ==================================================================================
+
+
+
+    [Serializable()]
+    public class UnexpectedValueException : Exception
+    {
+        private double value1;
+        private string objName;
+
+        protected UnexpectedValueException()
+           : base()
+        { }
+
+        public UnexpectedValueException(string name, double value1) :
+           base(String.Format("Unexpected value: {0} = {1g3} falls outside model expectations", name, value1))
+        {
+            this.value1 = value1;
+            this.objName = name;
+        }
+
+        public UnexpectedValueException(string name, double value1, string message)
+           : base(message)
+        {
+            this.value1 = value1;
+            this.objName = name;
+        }
+
+        public UnexpectedValueException(int value, string message, Exception innerException) :
+           base(message, innerException)
+        {
+            value1 = value;
+        }
+
+        protected UnexpectedValueException(SerializationInfo info,
+                                    StreamingContext context)
+           : base(info, context)
+        { }
+    }
+
+
 }

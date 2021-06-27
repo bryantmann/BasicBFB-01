@@ -53,10 +53,55 @@ namespace BasicBFB
 			}
 		}
 
+
+		public Assay(string name)
+		{
+			this.w = new double[numElements];
+			this.name = name;
+
+			for (int i = 0; i < numElements; i++)
+			{
+				w[i] = 1.0 / numElements;
+			}
+		}
+
+
 		// This constructor allows the programmer to initialize compositions
 		public Assay(double[] wKnown)
 		{
 			// Initialize w so that it is of length numElements
+			this.w = new double[numElements];
+			int n = numElements;
+			this.flow = 0.0;
+			this.p = 1.01325;
+			this.T = 25.0;
+
+			fracMoisture = 0.0;
+			fracAsh = 0.0;
+			fracVolatiles = 0.0;
+			fracFixedCarbon = 0.0;
+			feedParticleSize = 0.0;
+
+			// Check if wKnown length is less than  w.  If shorter, assume wKnown has
+			// same index to element mappings
+			// If wKnown is longer than numElements, w will contain the first numElements values from wKnown
+
+			if (wKnown.Length <= numElements)
+			{
+				n = wKnown.Length;
+			}
+
+			for (int i = 0; i < n; i++)
+			{
+				w[i] = wKnown[i];
+			}
+		}
+
+
+		public Assay(double[] wKnown, string name)
+		{
+			// Initialize w so that it is of length numElements
+			this.name = name;
 			this.w = new double[numElements];
 			int n = numElements;
 			this.flow = 0.0;

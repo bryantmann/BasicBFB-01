@@ -8,20 +8,32 @@ namespace BasicBFB
 	{
 		static void Main(string[] args)
 		{
-			// TODO: Upload to Github server ASAP!!
+			// TODO: Upload to Github server
 
-			GasifierParams p = ExampleData.gasifierParams();
-			CrossCheck tester = new CrossCheck(p);
+			GasifierParams param = ExampleData.gasifierParams();
+			Pyrolysis pyro = new Pyrolysis(param);
+			pyro.pyrolize();
 
-			tester.calcGasFracs();
+			Console.WriteLine("\nWell I made it past the calls for pyrolysis...\n");
 
-			// Arbitraty path for file
-			string filepath = @"C:\Users\Bryan\temp\gasData.csv";
-			string csvData = tester.dataToCSV();
+			double[] wTarCHO = pyro.tarCHO.w;
+			double[] wGasCHO = pyro.dryGasCHO.w;
+			double[] xGas = pyro.dryGasOut.x;
 
-			Utilities.saveTextAs(csvData, filepath);
+			string s = "";
+			s = String.Format("Tar wC: {0:g3}  wH: {1:g3}  wO: {2:g3}",
+								wTarCHO[0], wTarCHO[1], wTarCHO[2]);
+			s += "\n";
 
-			Console.WriteLine("File saved to bryan's temp directory as gasData.csv");
+			s += String.Format("Gas wC: {0:g3}  wH: {1:g3}  wO: {2:g3}",
+								wGasCHO[0], wGasCHO[1], wGasCHO[2]);
+			s += "\n\n";
+
+			s += String.Format("Gas xCO:  {0:g3}   xCO2: {1:g3}", xGas[0], xGas[1]);
+			s += "\n";
+			s += String.Format("    xH2:  {0:g3}   xH2O: {1:g3}", xGas[2], xGas[3]);
+			s += "\n\n";
+			Console.WriteLine("s");
 			Console.ReadKey();
 		}
 	}

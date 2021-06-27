@@ -75,7 +75,7 @@ namespace BasicBFB.Testing
 		// --------------------------------------------------------------------------
 		// -------------------------------- METHODS ---------------------------------
 		// --------------------------------------------------------------------------
-
+/*
 		public void calcGasFracs()
 		{
 			for (int i = 0; i < numPoints; i++)
@@ -285,6 +285,8 @@ namespace BasicBFB.Testing
 		//	Console.WriteLine($"Number of Points: {n}  (out of {numPoints} tested)");
 
 		//}
+
+		*/
 
 	}
 }
