@@ -101,7 +101,7 @@ namespace BasicBFB
 		public void setX(double[] newX)
 		{
 			int n = newX.Length;
-			double sum = 0.0;
+			//double sum = 0.0;
 
 			if (n > Stream.numComp)
 			{
@@ -111,7 +111,7 @@ namespace BasicBFB
 			for (int i = 0; i < n; i++)
 			{
 				this.x[i] = newX[i];
-				sum += x[i];
+				//sum += x[i];
 			}
 
 			if (x.Length > newX.Length)
