@@ -60,31 +60,6 @@ namespace BasicBFB
 			return yield;
 		}
 
-
-		// Method to estimate the dry elemental composition of
-		// "organic tar" that has emulsified water mixed in based on feed assay
-		// Note the input values correspond to FULLY DRY biomass (moisture subtracted)
-		static public Assay wfDryTar(Assay wfBiomass)
-		{
-			// Start by making a copy 
-			Assay wfAdjusted = wfBiomass.Clone();
-
-			
-
-			
-			// Simplify: Since N, S and metals are present in small amounts vs. CHO
-			// So zero out all other element wt fractions and renormalize
-			for (int i = 3; i < Assay.numElements; i++)
-			{
-				wfAdjusted.w[i] = 0;
-			}
-
-			
-
-			return wfAdjusted;
-		}
-
-
 	}
 
 

@@ -16,7 +16,7 @@ namespace BasicBFB
 		public double[] phis { get; private set; }      // Dry organic tar mass fractions (n = 3)
 		public double[] alphas { get; init; }           // Pyrolysis water mass fractions (n = 3)
 
-		public double[] gasHrange { get; } = { 0.0325, 0.1075 };   // From gas stoichometry constraints
+		public double[] gasHrange { get; private set; } = { 0.000, 0.25 };   // From gas stoichometry constraints
 		public double rootTol = 1.0e-6;					// Absolute error for tar %H root 
 
 		public double gasYield { get; private set; }	// Yields are wt/wt dry biomass
@@ -59,11 +59,14 @@ namespace BasicBFB
 			this.tarCHO = new Assay("Tar");
 			tarCHO.p = param.p;
 			tarCHO.T = param.T;
+			tarCHO.w[3] = 0.0;
+			tarCHO.w[4] = 0.0;
 
 			this.dryGasCHO = new Assay("Dry pyrolysis gas");
 			dryGasCHO.p = param.p;
 			dryGasCHO.T = param.T;
-
+			dryGasCHO.w[3] = 0.0;
+			dryGasCHO.w[4] = 0.0;
 
 			phis = organicTarMassFrac();
 
@@ -101,13 +104,15 @@ namespace BasicBFB
 
 			// Step 2: Calculate and store the tar wt% CHO in the tarOut assay
 			tarCHO.w[1] = tarFracFromGas(Element.H, gasH);
-			tarCHO.w[0] = tarFracFromTar(Element.C, gasH);
-			tarCHO.w[2] = tarFracFromTar(Element.O, gasH);
+			tarCHO.w[0] = tarFracFromTar(Element.C, tarCHO.w[1]);
+			tarCHO.w[2] = tarFracFromTar(Element.O, tarCHO.w[1]);
+			
 
 			// Step 3: using tar composition, populate this.dryGasCHO.w results
 			dryGasCHO.w[1] = gasH;
 			dryGasCHO.w[0] = gasFracFromTar(Element.C, tarCHO.w[0]);
 			dryGasCHO.w[2] = gasFracFromTar(Element.O, tarCHO.w[2]);
+			
 
 			// Step 4: Populate dryGasOut stream components from aboce using MATH!
 			dryGasOut.setX(gasComposition());
@@ -183,18 +188,19 @@ namespace BasicBFB
 			return wT;
 		}
 
-
+		// Equation verified
 		private double tarFracFromTar(Element element, double wHtar)
 		{
 			// Element specific values are singular nouns
 			double phi = phis[(int)element];
 			double alpha = alphas[(int)element];
 
-			double wT = phi - (alpha - phi) * (wHtar - phis[1]) / (alphas[1] - phis[1]);
+			double wT = phi + (alpha - phi) * (wHtar - phis[1]) / (alphas[1] - phis[1]);
 			return wT;
 		}
 
 
+		// Equation verified
 		private double gasFracFromTar(Element element, double wT)
 		{
 			double S = kPyros[0] + kPyros[1] + kPyros[2];
@@ -208,6 +214,42 @@ namespace BasicBFB
 		}
 
 
+		private double[] calcGasCHO(double gasH)
+		{
+			double[] wTarCHO = new double[3];
+			double[] wGasCHO = new double[3];
+
+			wTarCHO[1] = tarFracFromGas(Element.H, gasH);
+			wTarCHO[0] = tarFracFromTar(Element.C, wTarCHO[1]);
+			wTarCHO[2] = tarFracFromTar(Element.O, wTarCHO[1]);
+
+			wGasCHO[1] = gasH;
+			wGasCHO[0] = gasFracFromTar(Element.C, wTarCHO[0]);
+			wGasCHO[2] = gasFracFromTar(Element.O, wTarCHO[2]);
+
+			return wGasCHO;
+		}
+
+				
+		// Returns the 2D array containing (wMin, wMax) in columns for given gasH
+		// with elements C, O in rows and 
+		private double[,] wCHOBrackets(double gasH)
+		{
+			double[,] brackets = new double[3, 2];
+			
+			brackets[0, 0] = 0.2727 + 1.9091 * gasH;    // gasC min bracket
+			brackets[0, 1] = 0.4286 + 1.9091 * gasH;    // gasC max bracket
+
+			brackets[1, 0] = gasH;
+			brackets[1, 1] = gasH;
+
+			brackets[2, 0] = 0.5714 - 2.2857 * gasH;    // gasO min bracket
+			brackets[2, 1] = 0.7273 - 2.2857 * gasH;	// gasO max bracket
+
+			return brackets;
+		}
+
+
 		// Calculates CO, CO2, CH4 and H2 in dry, nitrogen-free pyrolysis gas
 		// Uses same indexing as Stream and the Component enumeration
 		private double[] gasComposition()
@@ -215,13 +257,13 @@ namespace BasicBFB
 			double[] y = new double[10];        // Will only fill the first 4 spots
 
 			// Experiments indicate H2 from pyrolysis is so small it can be neglected'
-			y[3] = 0.0;							// y[3] is H2
+			y[3] = 0.0;                         // y[3] is H2
 			y[2] = 4.0 * dryGasCHO.w[1];           // w[1] is wt frac H
 
 			// Next we can calc CO2.  I'll do it piecewise as usual
 			double alpha1 = (12.0 / 16.0) * y[3];
-			double beta1 = (924.0 / 28.0) * dryGasCHO.w[2];		// w[2] is O
-			double gamma1 = (3.0 / 11.0 - 6.0 / 7.0);	
+			double beta1 = (924.0 / 28.0) * dryGasCHO.w[2];     // w[2] is O
+			double gamma1 = (3.0 / 11.0 - 6.0 / 7.0);
 			y[1] = (dryGasCHO.w[0] - alpha1 - beta1) / gamma1;     // y[2] is CO2, w[0] is C
 
 			// CO is last
@@ -233,7 +275,33 @@ namespace BasicBFB
 			return y;
 		}
 
-	
 
+
+		public List<double[]> findValidCHO(int nDiv)
+		{
+			List<double[]> validCHO = new List<double[]>();
+			double x = 0.0;
+			double dx = (gasHrange[1] - gasHrange[0]) / ((double)nDiv);
+
+			for (int i = 1; i < nDiv; i++)
+			{
+				x += dx;
+				double[] gasCHO = calcGasCHO(x);
+				double[,] validRange = wCHOBrackets(x);
+
+				bool validGasC = (gasCHO[0] > validRange[0, 0]) && (gasCHO[0] < validRange[0, 1]);
+				bool validGasO = (gasCHO[2] > validRange[2, 0]) && (gasCHO[2] < validRange[2, 1]);
+
+				if (validGasC && validGasO)
+				{
+					validCHO.Add(gasCHO);
+					double sumY = gasCHO[0] + gasCHO[1] + gasCHO[2];
+					Console.WriteLine($"Added (C, H, O) = ({gasCHO[0]:F3}, {gasCHO[1]:F3}, {gasCHO[2]:F3}) with sumY = {sumY:F4}");
+				}
+			}
+
+
+			return validCHO;
+		}
 	}
 }

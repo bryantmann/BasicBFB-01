@@ -14,7 +14,7 @@ namespace BasicBFB.Testing
 		// Creates an Assay object for "sawdust" biomass feed
 		public static Assay sawdustAssay()
 		{
-			double[] w = new double[6] { 0.425, 0.063, 0.51, 0.002, 0.0, 0.012 };
+			double[] w = new double[5] { 0.425, 0.063, 0.51, 0.002, 0.0 };
 			Assay assay = new Assay(w);
 			assay.fracMoisture = 0.085;
 			assay.fracAsh = 0.012;

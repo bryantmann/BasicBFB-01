@@ -22,8 +22,7 @@ namespace BasicBFB
 		H = 1,
 		O = 2,
 		N = 3,
-		S = 4,
-		X = 5
+		S = 4
 	}
 
 

@@ -18,13 +18,13 @@ namespace BasicBFB
 	 *			  2			 O	(Oxygen)
 	 *			  3			 N	(Nitrogen)
 	 *			  4			 S	(Sulfur)
-	 *			  5			 X	(Inorganics/Ash components)
+	 *		  ** [5			 X	(Inorganics/Ash components)]  - DELETED
 	 */
 
 	public class Assay
 	{
 		public string name { get; set; } = "Assay X";
-		public const int numElements = 6;
+		public const int numElements = 5;
 		public double[] w { get; set; }             // Elemental mass fractions central to this class
 
 		public double p { get; set; }               // bar
@@ -211,7 +211,7 @@ namespace BasicBFB
 			//Assay dryWtFrac = this.Clone();
 			double mH2O = this.fracMoisture;
 			double mHRemoved = mH2O * 2.0 * MW.H / MW.H2O;
-			double mORemoved = mH2O - mHRemoved;
+			double mORemoved = mH2O * MW.O / MW.H2O;
 
 			this.fracMoisture = 0.0;
 
@@ -224,11 +224,12 @@ namespace BasicBFB
 			if (this.w[2] < 0.0) { this.w[2] = 0.0; }
 
 			// Normalize both proximate and ultimate analysis values
-			//dryWtFrac.normalize();
-			this.normalize();
-			double wetProx = mH2O + this.fracAsh + this.fracVolatiles + this.fracFixedCarbon;
-			double dryProx = wetProx - mH2O;
-			double factor = wetProx / dryProx;
+			double factor = 1.0 / (1.0 - mH2O);
+			for (int i = 0; i < numElements; i++)
+			{
+				this.w[i] *= factor;
+			}
+
 			this.fracAsh *= factor;
 			this.fracVolatiles *= factor;
 			this.fracFixedCarbon *= factor;
@@ -239,19 +240,12 @@ namespace BasicBFB
 		// remmoval of H2O, N2, O2 and S contaminants
 		public Assay cleanedAndDried()
 		{
-			Assay wfClean = this.normalized();
+			Assay wfClean = this.Clone();
 			wfClean.fullyDry();
 			wfClean.removeNonCHO();
+			wfClean.normalize();
 			return wfClean;
 		}
-
-
-		//public static Assay cleanAndDry(Assay raw)
-		//{
-		//	Assay dry = new Assay();
-
-
-		//}
 
 
 		// --------------------------------------------------------------------------
