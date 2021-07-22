@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB
+using BasicBFB.Model.Common;
+
+namespace BasicBFB.Model
 {
 	/* WtFrac Class
 	 *		Used to manage values of mass fraction of individual elements

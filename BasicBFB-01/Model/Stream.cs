@@ -4,7 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB
+using BasicBFB.Model.Common;
+
+
+namespace BasicBFB.Model
 {
 	/* Stream class
 	 *		Represents a stream going in or out of a unit operation

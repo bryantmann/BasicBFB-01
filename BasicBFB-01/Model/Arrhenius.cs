@@ -4,7 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB
+using BasicBFB.Model.Common;
+
+
+namespace BasicBFB.Model
 {
 	// Arrhenius expression used to calculate rate constants vs temperature
 	// This version of the model will mainly use this for pyrolysis reactions

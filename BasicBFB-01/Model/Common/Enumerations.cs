@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB
+namespace BasicBFB.Model.Common
 {
 	public enum Phase: int
 	{

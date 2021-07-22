@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using BasicBFB.Model;
+
+
 namespace BasicBFB.Testing
 {
 	// This static class generates input data used to run gasifier model tests

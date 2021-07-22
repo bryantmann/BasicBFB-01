@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using BasicBFB.Model;
 using BasicBFB.Testing;
 
 namespace BasicBFB
@@ -14,8 +15,6 @@ namespace BasicBFB
 			GasifierParams param = ExampleData.gasifierParams();
 			Pyrolysis pyro = new Pyrolysis(param);
 			pyro.pyrolize();
-
-			//Console.WriteLine("\nWell I made it past the calls for pyrolysis...\n");
 
 			double[] wTarCHO = pyro.tarCHO.w;
 			double[] wGasCHO = pyro.dryGasCHO.w;

@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB
+using BasicBFB.Model.Common;
+
+namespace BasicBFB.Model
 {
 	// Stores and communicates global conditions characterizing the system
 	public class GasifierParams

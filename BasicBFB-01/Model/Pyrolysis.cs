@@ -4,7 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BasicBFB
+using BasicBFB.Model.Common;
+
+
+namespace BasicBFB.Model
 {
 	public class Pyrolysis
 	{
@@ -13,10 +16,10 @@ namespace BasicBFB
 		public Assay dryFeedIn { get; private set; }
 
 		public double[] kPyros { get; private set; }    // All four [=] 1/sec
-		public double[] phis { get; private set; }      // Dry organic tar mass fractions (n = 3)
-		public double[] alphas { get; init; }           // Pyrolysis water mass fractions (n = 3)
+		private double[] phis { get; set; }      // Dry organic tar mass fractions (n = 3)
+		private double[] alphas { get; init; }           // Pyrolysis water mass fractions (n = 3)
 
-		private double[] gasHrange { get; set; } = { 0.000, 0.25 };   // From gas stoichometry constraints
+		private double[] gasHrange { get; } = { 0.000, 0.25 };   // From gas stoichometry constraints
 																	  //public double rootTol = 1.0e-6;					// Absolute error for tar %H root 
 
 		public double gasYield { get; private set; }    // Yields are wt/wt dry biomass
@@ -31,9 +34,6 @@ namespace BasicBFB
 		// Effluent streams
 		public Stream dryGasOut { get; private set; }   // Dry, N2 free still
 		public Stream badGasOut { get; private set; }       // Steam, N2, O2, H2S
-
-
-		// TODO: Be sure to adjust dry feed rate down after cleanup and dryout
 
 
 
@@ -83,60 +83,17 @@ namespace BasicBFB
 		// --------------------------------------------------------------------------
 
 		// True if no converged ok, false if exception was thrown
-		public bool pyrolize()
+		public void pyrolize()
 		{
-			//// Step 1: Calculate tar %H using root finder algorithm.
-			//Del1 handler = tarBalance;
-			//double gasH = 0.0;
-			//try
-			//{
-			//	gasH = Solver.ridder(tarBalance, gasHrange, rootTol);
-			//}
-			//catch (NotConvergedException e)
-			//{
-			//	Console.WriteLine(e.Message);
-			//	return false;
-			//}
-			//catch (ArgumentException e)
-			//{
-			//	Console.WriteLine(e.Message);
-			//	return false;
-			//}
-
-			//// Step 2: Calculate and store the tar wt% CHO in the tarOut assay
-			//tarCHO.w[1] = tarFracFromGas(Element.H, gasH);
-			//tarCHO.w[0] = tarFracFromTar(Element.C, tarCHO.w[1]);
-			//tarCHO.w[2] = tarFracFromTar(Element.O, tarCHO.w[1]);
-
-
-			//// Step 3: using tar composition, populate this.dryGasCHO.w results
-			//dryGasCHO.w[1] = gasH;
-			//dryGasCHO.w[0] = gasFracFromTar(Element.C, tarCHO.w[0]);
-			//dryGasCHO.w[2] = gasFracFromTar(Element.O, tarCHO.w[2]);
-
 			setDryGasCHO();
 			setTarCHO();
 			setWaterYield();
 
-			// Step 4: Populate dryGasOut stream components from aboce using MATH!
-			dryGasOut.setX(gasComposition2());
+			dryGasOut.setX(gasComposition());
 
-			if (!dryGasOut.isNormalized())
-			{
-				string objName = "dryGasOut";
-				double sum = dryGasOut.sumX();
-				string message = $"Stream {objName} has sum(x[i]) = {sum}, above the normalization tolerance";
-				Console.WriteLine(message);
-				throw new UnexpectedValueException(objName, sum, message);
-			}
-
-			// Step 5: Populate badGasOut
+			// TODO: Populate badGasOut
 
 			dryGasOut.flowrate = dryGasOutRate();
-
-			// Step 7: Profit!
-
-			return true;
 		}
 
 		private double dryFeedRate()
@@ -237,33 +194,6 @@ namespace BasicBFB
 		// Uses same indexing as Stream and the Component enumeration
 		private double[] gasComposition()
 		{
-			double[] y = new double[10];        // Will only fill the first 4 spots
-
-			// Experiments indicate H2 from pyrolysis is so small it can be neglected'
-			y[3] = 0.0;                         // y[3] is H2
-			y[2] = 4.0 * dryGasCHO.w[1];           // w[1] is wt frac H
-
-			// Next we can calc CO2.  I'll do it piecewise as usual
-			double alpha1 = (12.0 / 16.0) * y[3];
-			double beta1 = (924.0 / 28.0) * dryGasCHO.w[2];     // w[2] is O
-			double gamma1 = (3.0 / 11.0 - 6.0 / 7.0);
-			y[1] = (dryGasCHO.w[0] - alpha1 - beta1) / gamma1;     // y[2] is CO2, w[0] is C
-
-			// CO is last
-			double a = (12.0 / 16.0) * y[3];
-			double b = (12.0 / 44.0) * y[1];
-			double c = 12.0 / 28.0;
-			y[0] = (dryGasCHO.w[0] - a - b) / c;
-
-			return y;
-		}
-
-
-		// Second try with rederived formulae
-		// Calculates CO, CO2, CH4 and H2 in dry, nitrogen-free pyrolysis gas
-		// Uses same indexing as Stream and the Component enumeration
-		private double[] gasComposition2()
-		{
 			double[] y = new double[Stream.numComp];		// Mass fractions
 			double[] gasCHO = dryGasCHO.w;
 
@@ -296,6 +226,7 @@ namespace BasicBFB
 
 			return y;
 		}
+
 
 		private List<double[]> findValidCHO(int nDiv)
 		{
@@ -391,31 +322,5 @@ namespace BasicBFB
 
 			return rate;
 		}
-
-
-		//// Given a value for wHgas, calculate tar CHO values.  Target is for sum = 1.000
-		//// This method returns the difference of that sum from 1.0 (target zero difference)
-		//// Used by a delegate in ridder root finding method
-		//private double tarBalance(double wHgas)
-		//{
-		//	double[] wTar = new double[3];
-
-		//	// Calculate tar hydrogen from gas H
-		//	wTar[1] = tarFracFromGas(Element.H, wHgas);
-
-		//	// Next calculate tar %C and %O from tar %H
-		//	wTar[0] = tarFracFromTar(Element.C, wTar[1]);
-		//	wTar[2] = tarFracFromTar(Element.O, wTar[1]);
-
-		//	// Add them up and subtract from 1.0 to return result of balance
-		//	double sum = 0.0;
-		//	foreach (double w in wTar)
-		//	{
-		//		sum += w;
-		//	}
-
-		//	return 1.0 - sum;
-		//}
-
 	}
 }
