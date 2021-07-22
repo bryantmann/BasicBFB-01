@@ -16,7 +16,7 @@ namespace BasicBFB
 		public double[] phis { get; private set; }      // Dry organic tar mass fractions (n = 3)
 		public double[] alphas { get; init; }           // Pyrolysis water mass fractions (n = 3)
 
-		public double[] gasHrange { get; } = { 0.04, 0.105 };   // From gas stoichometry constraints
+		public double[] gasHrange { get; } = { 0.0325, 0.1075 };   // From gas stoichometry constraints
 		public double rootTol = 1.0e-6;					// Absolute error for tar %H root 
 
 		public double gasYield { get; private set; }	// Yields are wt/wt dry biomass
