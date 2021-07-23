@@ -25,13 +25,13 @@ namespace BasicBFB.Model
 	 *			6			O2		(may not be used much)
 	 *			7			H2S		(may not be used much)
 	 *			8			Tar		(may not be used much)
-	 *			9			Char	(may not be used much)
+	 *			[9			Char	(removed)]
 	 */
 
 
 	public class Stream
 	{
-		public static int numComp = 10;
+		public static int numComp = 9;
 		public bool isMolar { get; private set; }        // Default of false means mass basis by default
 		public double[] x { get; set; }
 
@@ -134,7 +134,7 @@ namespace BasicBFB.Model
 		public void normalizeGasFractions()
 		{
 			double sumX = 0.0;
-			int n = Stream.numComp - 2;        // Excludes the last two components, Tar and Char
+			int n = Stream.numComp;        // Excludes the last two components, Tar and Char
 			if (n <= 0)
 			{
 				throw new ArgumentOutOfRangeException(
@@ -173,7 +173,7 @@ namespace BasicBFB.Model
 
 			double[] y = new double[Stream.numComp];
 			double sumX = 0.0;
-			int n = Stream.numComp - 2;        // Excludes the last two components, Tar and Char
+			int n = Stream.numComp;
 
 			for (int i = 0; i < n; i++)
 			{
@@ -298,7 +298,7 @@ namespace BasicBFB.Model
 			get
 			{
 				double avg = 0.0;
-				int n = numComp - 2;        // Excludes the last two components, Tar and Char
+				int n = numComp;   
 
 				// Copy the first numComp-2 values from x into local variable y and normalize
 				// Normalization excludes char and tar since they are mostly not gas phase

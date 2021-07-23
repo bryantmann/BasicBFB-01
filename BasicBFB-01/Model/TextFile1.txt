@@ -1,0 +1,52 @@
+﻿Reactor Class Plan
+
+Properties
+- Pyrolysis pyro
+- List<double> z
+- List<double[]> mDot
+- double mChar, initialized with a guess passed to constructor as argument
+- Include GasifierParams param 
+
+- Components in Mdot elements are ordered same as Stream class
+	- (i = CO, CO2, CH4, H2, H2O, N2, O2, H2S, Tar)
+- Char content quantified by mass holdup in bed (a single number) = mChar
+- z spacing is unknown since ode45 has variable step sizes.  
+  Substitute zIndex for z
+
+- Helper functions:
+	- double[] y(zIndex): Mole fractions in gas phase (incl. tar)
+	- double partialP(Component cmp, int zIndex)
+	- double conc(Component cmp, int zIndex)
+	- double U(int zIndex)
+	- double dBubble(z)
+	- double eps(z)
+	- double Lbed
+	- mDot(N2, O2, H2S) - From badGasOut
+	- double avgEps (avg bed voidage)
+
+- Gasification reaction rate vs. position
+	- rxn_i(z): 5 functions
+
+Equations for Model:
+	. dm(CO)/dz
+	. dm(CO2)/dz
+	. dm(CH4)/dz
+	. dm(H2)/dz
+	. dm(H2O)/dz
+	. dm(N2)/dz = dm(O2)/dz = dm(H2S)/dz = 0.0
+	. dm(Tar)/dz
+
+	. Mchar - an integral equation (need an integration algorithm in Solver)
+
+Algorithm:
+	. Start with a guess for mChar (user input)
+	. Set local mCharOld = mChar
+	. Solve system of ODEs -> populates z and mDot lists
+	. Calculate mChar using mDot values
+	. Compare mCharErr = abs(mChar - mCharOld) / mChar
+	. Repeat until mCharErr <= charTol (start with modest 1e-3)
+
+Results
+	. Clean dry gas mole fractions in effluent
+	. Yield (kg/kg biomass) of Gas, Tar and Char in effluent
+	. 

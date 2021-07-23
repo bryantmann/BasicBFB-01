@@ -10,7 +10,9 @@ namespace BasicBFB.Model.Common
 	{
 		public const double pi = 3.1415926535897932384626433832795028841971693993751;
 		public const double Rgas = 8.31446261815324;    // J / mol.K
-		public const double NORM_TOL = 1.0e-7;			// Normalized enough?
+		public const double g = 9.81;					// m/s2
+
+		public const double NORM_TOL = 1.0e-7;			// Normalized enough
 	}
 
 
@@ -30,7 +32,8 @@ namespace BasicBFB.Model.Common
 		public const double O2 = 2.0 * MW.O;
 		public const double N2 = 2.0 * MW.N;
 		public const double H2S = MW.S + 2.0 * MW.H;
-		public const double Char = MW.C;
+		public const double Tar = 6.0 * MW.C + 6.0 * MW.H + MW.O;	// As phenol
+		public const double Char = MW.C;							// As carbon
 
 		/*	molWts is an Immutable array with MW values at same index as described in Stream class
 		 *	It is to be used for convenience and indexing purposes

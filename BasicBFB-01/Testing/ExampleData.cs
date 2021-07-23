@@ -55,7 +55,7 @@ namespace BasicBFB.Testing
 
 			p.setVesselParams(T: 750.0, p: 1.115, dBed: 0.15, dFree: 0.15, Ltot: 1.2);
 			
-			p.setBedParams(U0: 0.25, L0: 0.32, mSand: 8.0, dSand: 250.0, rhoSand: 2600.0);
+			p.setBedParams(U0: 0.25, L0: 0.32, Nor: 50, mSand: 8.0, dSand: 250.0, rhoSand: 2600.0);
 
 			p.setFeedParams(source: "Sawdust", feedRate: 3.75,
 							dFeed: 500.0, feedIn: sawdust, stmIn: steam, sbRatio: 2.0);

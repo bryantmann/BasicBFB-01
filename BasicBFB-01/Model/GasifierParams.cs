@@ -23,6 +23,7 @@ namespace BasicBFB.Model
 		// Fluidized bed parameters
 		public double L0 { get; private set; }				// Bed height at min U0 gas velocity, m
 		public double U0 { get; private set; }				// Minimum gas velocity, m/s 
+		public int Nor { get; private set; }				// Number of orifices in distributor plate
 		public double mSand { get; private set; }			// Inventory (kg) of sand in reactor
 		public double dSand { get; private set; }			// Avg. sand particle diameter, µm
 		public double rhoSand { get; private set; }			// Sand particle density, kg/m3
@@ -34,11 +35,19 @@ namespace BasicBFB.Model
 		public double dFeed { get; private set; }			// Avg. biomass particle diameter, µm
 		public Assay feedIn { get; private set; }        // Feed assay properties
 		public Stream steamIn { get; private set; }			// Gasifying stream properties
-		public double sbr { get; private set; }				// Steam to biomass ratio, wt/wt
+		public double sbr { get; private set; }             // Steam to biomass ratio, wt/wt
+
+		public double Abed
+		{
+			get
+			{
+				return Const.pi * dBed * dBed / 4.0;
+			}
+		}
 
 
 		// --------------------------------------------------------------------------
-		// -------------------------------- METHODS ---------------------------------
+		//									METHODS
 		// --------------------------------------------------------------------------
 		public void setVesselParams(double T, double p, double dBed, 
 									double dFree, double Ltot)
@@ -51,11 +60,12 @@ namespace BasicBFB.Model
 		}
 
 
-		public void setBedParams(double U0, double L0, 
+		public void setBedParams(double U0, double L0, int Nor,
 								 double mSand, double dSand, double rhoSand)
 		{ 
 			this.U0 = U0;
 			this.L0 = L0;
+			this.Nor = Nor;
 			this.mSand = mSand;
 			this.dSand = dSand;
 			this.rhoSand = rhoSand;
