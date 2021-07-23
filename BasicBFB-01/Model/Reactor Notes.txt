@@ -8,7 +8,7 @@ Properties
 - Include GasifierParams param 
 
 - Components in Mdot elements are ordered same as Stream class
-	- (i = CO, CO2, CH4, H2, H2O, N2, O2, H2S, Tar)
+	- (i = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar)
 - Char content quantified by mass holdup in bed (a single number) = mChar
 - z spacing is unknown since ode45 has variable step sizes.  
   Substitute zIndex for z

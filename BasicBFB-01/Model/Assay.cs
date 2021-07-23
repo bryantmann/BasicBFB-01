@@ -20,6 +20,7 @@ namespace BasicBFB.Model
 	 *			  2			 O	(Oxygen)
 	 *			  3			 N	(Nitrogen)
 	 *			  4			 S	(Sulfur)
+	 *			  
 	 *		  ** [5			 X	(Inorganics/Ash components)]  - DELETED
 	 */
 

@@ -32,8 +32,8 @@ namespace BasicBFB.Model
 		public Assay dryGasCHO { get; private set; }    // Stores gas CHO wt% values
 
 		// Effluent streams
-		public Stream dryGasOut { get; private set; }   // Dry, N2 free still
-		public Stream badGasOut { get; private set; }       // Steam, N2, O2, H2S
+		public Stream dryGasOut { get; private set; }		// Dry, N2 free still
+		public Stream badGasOut { get; private set; }       // Moisture, N2, O2, H2S
 
 
 
@@ -90,10 +90,8 @@ namespace BasicBFB.Model
 			setWaterYield();
 
 			dryGasOut.setX(gasComposition());
-
-			// TODO: Populate badGasOut
-
 			dryGasOut.flowrate = dryGasOutRate();
+			setBadGasOut();
 		}
 
 		private double dryFeedRate()
@@ -310,7 +308,7 @@ namespace BasicBFB.Model
 			this.waterYield = tarYield * (tarCHO.w[0] - phis[0]) / (alphas[0] - phis[0]);
 		}
 
-
+		// Returns mass flowrate of CO + CO2 + CH4 + H2 from biomass pyrolysis
 		private double dryGasOutRate()
 		{
 			double rate = dryGasCHO.flow;
@@ -322,5 +320,31 @@ namespace BasicBFB.Model
 
 			return rate;
 		}
+
+
+		// Populates values for badGasOut stream with H2O(moisture) + N2 + H2S + tar
+		private void setBadGasOut()
+		{
+			double feedRate = param.feedIn.flow;
+			double mDot_N2 = feedRate * param.feedIn.w[(int)Element.N];
+			double mDot_S = feedRate * param.feedIn.w[(int)Element.S];
+			double mDot_H2O = feedRate * param.feedIn.fracMoisture;
+			double mDot_Tar = tarCHO.flow;
+
+			double mDotSum = mDot_N2 + mDot_S + mDot_H2O + mDot_Tar;
+			badGasOut.flowrate = mDotSum;
+
+			badGasOut.x[(int)Component.CO] = 0.0;
+			badGasOut.x[(int)Component.CO2] = 0.0;
+			badGasOut.x[(int)Component.CH4] = 0.0;
+			badGasOut.x[(int)Component.H2] = 0.0;
+			badGasOut.x[(int)Component.O2] = 0.0;
+
+			badGasOut.x[(int)Component.N2] = mDot_N2 / mDotSum;
+			badGasOut.x[(int)Component.S] = mDot_S / mDotSum;
+			badGasOut.x[(int)Component.H2O] = mDot_H2O / mDotSum;
+			badGasOut.x[(int)Component.Tar] = mDot_Tar / mDotSum;
+		}
+
 	}
 }

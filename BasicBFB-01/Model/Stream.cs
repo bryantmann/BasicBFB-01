@@ -23,8 +23,9 @@ namespace BasicBFB.Model
 	 *			4			H2O
 	 *			5			N2		(may not be used much)
 	 *			6			O2		(may not be used much)
-	 *			7			H2S		(may not be used much)
-	 *			8			Tar		(may not be used much)
+	 *			7			S		(may not be used much)
+	 *			8			Tar		
+	 *			
 	 *			[9			Char	(removed)]
 	 */
 
@@ -53,9 +54,9 @@ namespace BasicBFB.Model
 			}
 		}
 
-		static public string[] componentNames = new string[10] { "CO", "CO2", "CH4", "H2",
-																"H2O", "N2", "O2", "H2S",
-																"Tar", "Char" };
+		static public string[] componentNames = new string[9] { "CO", "CO2", "CH4", "H2",
+																"H2O", "N2", "O2", "S species",
+																"Tar"};
 
 		// --------------------------------------------------------------------------
 		// ---------------------------- CONSTRUCTORS --------------------------------

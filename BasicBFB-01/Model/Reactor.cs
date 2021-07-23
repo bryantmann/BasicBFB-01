@@ -15,7 +15,7 @@ namespace BasicBFB.Model
 		public Pyrolysis pyro;
 
 		public List<double> z = new List<double>();		
-		public List<double[]> mDot = new List<double[]>();  // j = CO, CO2, CH4, H2, H2O, N2, O2, H2S, Tar
+		public List<double[]> mDot = new List<double[]>();  // j = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar
 		public double mChar;
 
 
