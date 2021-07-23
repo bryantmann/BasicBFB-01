@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace BasicBFB.Model.Common
 {
 	public delegate double[] OdeDel(double t, double[] y);
+
 	public class OdeSolver
 	{
 		// --------------------------------------------------------------------------------
@@ -56,7 +57,6 @@ namespace BasicBFB.Model.Common
 
 			List<double> tOut = new List<double>(200);
 			List<double[]> Y5 = new List<double[]>(200);
-			List<double[]> Y4 = new List<double[]>(200);
 
 			double t = tspan[0];
 			double[] y = y0;
@@ -67,7 +67,7 @@ namespace BasicBFB.Model.Common
 			// Calculate an initial step size using dy(y, t)
 			absh = Math.Min(0.01 * deltaT, hmax);
 
-			double[] f0 = dy(t, y);
+			double[] f0 = dy(t, y0);
 			double rh = getInitialStepSize(y, f0);
 			if (absh*rh > 1.0)
 			{
@@ -77,13 +77,19 @@ namespace BasicBFB.Model.Common
 
 			// Initialize first row of Y and first element of t
 			tOut.Add(t);
-			Y4.Add(y);
 			Y5.Add(y);
 
-			double[] y4Next = new double[y.Length];
-			double[] y5Next = new double[y.Length];
 			double tNext = 0.0;
 			double err = 0.0;
+			double[][] V = new double[6][];
+			double[] y4Next = new double[y.Length];
+			double[] yi = new double[y.Length];
+			double[] yErr = new double[y.Length];
+			double[] maxAbsY = new double[y.Length];
+			double[] yErrRatio = new double[y.Length];
+			double ti = 0.0;
+			double factor = 0.0;
+			double temp = 0.0;
 
 			bool isDone = false;
 			while (!isDone)
@@ -91,7 +97,10 @@ namespace BasicBFB.Model.Common
 				int n = tOut.Count - 1;      // index of last element
 				t = tOut[n];
 				y = Y5[n];
-								
+
+				//double[] y4Next = new double[y.Length];
+				double[] y5Next = new double[y.Length];
+
 				// Get step size, constrained by hmin based on last t value
 				hmin = 16.0 * getEps(t);
 				absh = Math.Min(hmax, Math.Max(hmin, absh));
@@ -108,15 +117,13 @@ namespace BasicBFB.Model.Common
 				while (true)
 				{
 					// Calculate the six intermediate slopes 
-					double[][] V = new double[6][];
+					
 					V[0] = dy(t, y);
 					
 					for (int i = 1; i <= 5; i++)
 					{
-						double ti = t + A[i] * h;
-						double[] yi = new double[y.Length];
-
-						//double[] sumhBvj = new double[y.Length];
+						ti = t + A[i] * h;
+						
 						for (int k = 0; k < y.Length; k++)
 						{
 							double sum_k = 0.0;
@@ -124,7 +131,6 @@ namespace BasicBFB.Model.Common
 							{
 								sum_k += h * B[i, j] * V[j][k];
 							}
-							//sumhBvj[k] = sum_k;
 							yi[k] = y[k] + sum_k;
 						}
 
@@ -157,13 +163,12 @@ namespace BasicBFB.Model.Common
 					}
 
 					// Estimate the error with current h using y4Next and y5Next values
-					double[] yErr = new double[y.Length];
 					for (int k = 0; k < y.Length; k++)
 					{
 						yErr[k] = y5Next[k] - y4Next[k];
 					}
 
-					err = calcError(y, y5Next, yErr);
+					err = calcError(y, y5Next, yErr, ref maxAbsY, ref yErrRatio);
 
 					// Accept this solution only if weighted error err is no more	
 					// than the tolerance relTol.  Estimate an h that will yield
@@ -180,7 +185,8 @@ namespace BasicBFB.Model.Common
 						if (notFailed)
 						{
 							notFailed = false;
-							double factor = 0.8 * Math.Pow((relTol / err), pow);
+							//double factor = 0.8 * Math.Pow((relTol / err), pow);
+							factor = 0.8 * Math.Pow((relTol / err), pow);
 							factor = Math.Max(0.1, factor);
 							absh = Math.Max(hmin, absh * factor);
 						} else
@@ -206,7 +212,8 @@ namespace BasicBFB.Model.Common
 				if (notFailed)
 				{
 					// Note that absh may shrink by 0.8, and that err may be 0.
-					double temp = 1.25 * Math.Pow((err / relTol), pow);
+					//double temp = 1.25 * Math.Pow((err / relTol), pow);
+					temp = 1.25 * Math.Pow((err / relTol), pow);
 					if (temp > 0.2)
 					{
 						absh = absh / temp;
@@ -221,14 +228,14 @@ namespace BasicBFB.Model.Common
 				Y5.Add(y5Next);
 			}
 
-			tOut.TrimExcess();
-			Y5.TrimExcess();
+			//tOut.TrimExcess();
+			//Y5.TrimExcess();
 
 			return (tOut, Y5);
 		}
 
 
-		private double getInitialStepSize(double[] y0, double[] f0)
+		private double getInitialStepSize(in double[] y0, in double[] f0)
 		{
 			double threshold = absTol / relTol;
 			double[] v = new double[y0.Length];
@@ -240,7 +247,7 @@ namespace BasicBFB.Model.Common
 			return normi(v) / (0.8 * Math.Pow(relTol, pow));
 		}
 
-		private static double norm(double[] v)
+		private static double norm(in double[] v)
 		{
 			double sumSq = 0.0;
 			for (int i = 0; i < v.Length; i++)
@@ -251,7 +258,7 @@ namespace BasicBFB.Model.Common
 			return Math.Sqrt(sumSq);
 		}
 
-		private static double normi(double[] v)
+		private static double normi(in double[] v)
 		{
 			double maxabs = Math.Abs(v[0]);
 			for (int i = 1; i <  v.Length; i++)
@@ -271,26 +278,26 @@ namespace BasicBFB.Model.Common
 			double machEps = x;
 			do
 			{
-				machEps /= 2.0d;
+				machEps /= 10.0d;
 			}
 			while ((double)(x + machEps) != x);
 			return machEps;
 		}
 
 
-		private double calcError(double[] yOld, double[] yNew, double[] yE)
+		private double calcError(in double[] yOld, in double[] yNew, in double[] yE, ref double[] maxAbsY, ref double[] yErrRatio)
 		{
 			double threshold = absTol / relTol;
 			double err = 0.0;
 
-			double[] maxAbsY = new double[yOld.Length];
+			//maxAbsY = new double[yOld.Length];
 			for (int i = 0; i < yNew.Length; i++)
 			{
 				double maxYi = Math.Max(Math.Abs(yOld[i]), Math.Abs(yNew[i]));
 				maxAbsY[i] = Math.Max(maxYi, threshold);
 			}
 
-			double[] yErrRatio = new double[yOld.Length];
+			//yErrRatio = new double[yOld.Length];
 			for (int i = 0; i < yOld.Length; i++)
 			{
 				yErrRatio[i] = yE[i] / maxAbsY[i];
