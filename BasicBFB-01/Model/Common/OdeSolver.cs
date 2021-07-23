@@ -58,15 +58,14 @@ namespace BasicBFB.Model.Common
 			List<double[]> Y5 = new List<double[]>(200);
 			List<double[]> Y4 = new List<double[]>(200);
 
+			double t = tspan[0];
+			double[] y = y0;
+
 			double hmin = 16.0 * getEps(t);
 			double hmax = hMaxFrac * deltaT;
 
 			// Calculate an initial step size using dy(y, t)
 			absh = Math.Min(0.01 * deltaT, hmax);
-
-			double t = tspan[0];
-			double[] y = y0;
-			double[] yhat = y0;
 
 			double[] f0 = dy(t, y);
 			double rh = getInitialStepSize(y, f0);
@@ -79,7 +78,12 @@ namespace BasicBFB.Model.Common
 			// Initialize first row of Y and first element of t
 			tOut.Add(t);
 			Y4.Add(y);
-			Y5.Add(yhat);
+			Y5.Add(y);
+
+			double[] y4Next = new double[y.Length];
+			double[] y5Next = new double[y.Length];
+			double tNext = 0.0;
+			double err = 0.0;
 
 			bool isDone = false;
 			while (!isDone)
@@ -127,11 +131,11 @@ namespace BasicBFB.Model.Common
 						V[i] = dy(ti, yi);
 					}
 
+					// Update value for tNext using current value of h
+					tNext = t + h;
+
 					// Using the slopes, calculate y(n+1) values using both 
 					// the 4th and 5th order formulae
-					double[] y4Next = new double[y.Length];
-					double[] y5Next = new double[y.Length];
-
 					for (int k = 0; k < y.Length; k++)
 					{
 						// 4th order formula
@@ -152,13 +156,75 @@ namespace BasicBFB.Model.Common
 						y5Next[k] = y[k] + sum5_k;
 					}
 
+					// Estimate the error with current h using y4Next and y5Next values
+					double[] yErr = new double[y.Length];
+					for (int k = 0; k < y.Length; k++)
+					{
+						yErr[k] = y5Next[k] - y4Next[k];
+					}
+
+					err = calcError(y, y5Next, yErr);
+
+					// Accept this solution only if weighted error err is no more	
+					// than the tolerance relTol.  Estimate an h that will yield
+					// an error of relTol on the next step/try, and use 0.8 of this
+					// value to avoid failures
+					if (err > relTol)
+					{
+						if (absh <= hmin)
+						{
+							string message = $"OdeSolver.rk45 error at t = {t:g4} exceeds tolerance even with minimum step size of {hmin:g4}.";
+							throw new NotConvergedException(t, err, message);
+						}
+
+						if (notFailed)
+						{
+							notFailed = false;
+							double factor = 0.8 * Math.Pow((relTol / err), pow);
+							factor = Math.Max(0.1, factor);
+							absh = Math.Max(hmin, absh * factor);
+						} else
+						{
+							absh = Math.Max(hmin, 0.5 * absh);
+						}
+
+						isDone = false;
+					} else
+					{
+						break;
+					}
+				}	// Close of inner while loop for single step
+
+
+
+				if (isDone)
+				{
+					break;
 				}
 
+				// If there were no failures compute a new h
+				if (notFailed)
+				{
+					// Note that absh may shrink by 0.8, and that err may be 0.
+					double temp = 1.25 * Math.Pow((err / relTol), pow);
+					if (temp > 0.2)
+					{
+						absh = absh / temp;
+					} else
+					{
+						absh = 5.0 * absh;
+					}
+				}
 
+				// Append new values for tNext and y5Next to tOut and Y5
+				tOut.Add(tNext);
+				Y5.Add(y5Next);
 			}
 
+			tOut.TrimExcess();
+			Y5.TrimExcess();
 
-			return (tOut, YOut);
+			return (tOut, Y5);
 		}
 
 
@@ -209,6 +275,29 @@ namespace BasicBFB.Model.Common
 			}
 			while ((double)(x + machEps) != x);
 			return machEps;
+		}
+
+
+		private double calcError(double[] yOld, double[] yNew, double[] yE)
+		{
+			double threshold = absTol / relTol;
+			double err = 0.0;
+
+			double[] maxAbsY = new double[yOld.Length];
+			for (int i = 0; i < yNew.Length; i++)
+			{
+				double maxYi = Math.Max(Math.Abs(yOld[i]), Math.Abs(yNew[i]));
+				maxAbsY[i] = Math.Max(maxYi, threshold);
+			}
+
+			double[] yErrRatio = new double[yOld.Length];
+			for (int i = 0; i < yOld.Length; i++)
+			{
+				yErrRatio[i] = yE[i] / maxAbsY[i];
+			}
+
+			err = normi(yErrRatio);
+			return err;
 		}
 	}
 }
