@@ -26,7 +26,7 @@ namespace BasicBFB.Model
 
 
 		// --------------------------------------------------------------------------------
-		//									CONSTRUCTORS
+		//									CONSTRUCTOR
 		// --------------------------------------------------------------------------------
 		public ReactorBed(GasifierParams param, double mCharGuess)
 		{
@@ -45,9 +45,88 @@ namespace BasicBFB.Model
 
 
 		// --------------------------------------------------------------------------------
+		//							MAIN CALCULATION ALGORITHM
+		// --------------------------------------------------------------------------------
+		public void solve()
+		{
+			// Code goes here
+		}
+
+
+
+		// --------------------------------------------------------------------------------
+		//							ODE FOR REACTION SYSTEM
+		// --------------------------------------------------------------------------------
+		private double[] dmDot(int zIndex)
+		{
+			double[] dmdz = new double[Stream.numComp];
+			double[] gasRates = gasifyRates(zIndex);
+			double eps = epsilon(zIndex);
+			double U = gasU(zIndex);
+
+			dmdz[(int)Component.CO] = dmCO(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.CO2] = dmCO2(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.CH4] = dmCH4(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.H2] = dmH2(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.H2O] = dmH2O(zIndex, gasRates, eps);
+			dmdz[(int)Component.Tar] = dmTar(zIndex, eps, U);
+			dmdz[(int)Component.N2] = 0.0;
+			dmdz[(int)Component.O2] = 0.0;
+			dmdz[(int)Component.S] = 0.0;
+
+			return dmdz;
+		}
+
+
+		// --------------------------------------------------------------------------------
+		//							CHAR HOLDUP CALCULATIONS
+		// --------------------------------------------------------------------------------
+
+		// Calculates new value for mChar and updates this object's mChar parameter value
+		private void updateMChar()
+		{
+			double tauP = meanTauP();
+			Del2 rCsum = sumCharRates;
+			double integral = Solver.integrate(rCsum, z) / Lbed;
+			double denom = (1.0 / tauP) + integral;
+			mChar = pyro.charYield * pyro.dryFeedIn.flow / denom;
+		}
+
+		// d(tauP)/dz - derivative of particle residence time wrt z as a function of zIndex
+		private double dtauP(int zIndex)
+		{
+			double eps = epsilon(zIndex);
+			double U = gasU(zIndex);
+			return (1.0 - eps) / U;
+		}
+
+		// Mean solids residence time tauP
+		private double meanTauP()
+		{
+			Del2 dtau = dtauP;
+			return Solver.integrate(dtau, z);
+		}
+
+		// Function used as integrand in mChar calculation method
+		private double sumCharRates(int zIndex)
+		{
+			double Tk = param.T + 273.15;       // T in Kelvin
+
+			double pCO2 = partialP(Component.CO2, zIndex);
+			double pH2O = partialP(Component.H2O, zIndex);
+			double pH2 = partialP(Component.H2, zIndex);
+
+			double rC1 = GasRxn.rateC1(pCO2, Tk);
+			double rC2 = GasRxn.rateC2(pH2O, Tk);
+			double rC3 = GasRxn.rateC3(pH2, Tk);
+			return rC1 + rC2 + rC3;
+		}
+
+
+		// --------------------------------------------------------------------------------
 		//								SETUP HELPER FUNCTIONS
 		// --------------------------------------------------------------------------------
-		
+
 		// Combine pyroGas = dryGasOut + badGasOut
 		private void mixPyroGas()
 		{
@@ -148,7 +227,7 @@ namespace BasicBFB.Model
 			double db = 0.0;
 			double zi = z[zIndex];
 			double deltaU = gasU(zIndex) - param.U0;
-			double zTerm = z + 4.0 * Math.Sqrt((param.A / ((double)param.Nor)));
+			double zTerm = zi + 4.0 * Math.Sqrt((param.Axs / ((double)param.Nor)));
 			db = 0.54 * Math.Pow(Const.g, -0.2) * Math.Pow(deltaU, 0.4);
 			db *= Math.Pow(zTerm, 0.8);
 			return db;
@@ -309,8 +388,17 @@ namespace BasicBFB.Model
 		// H2O rate expression (dmH2O/dz)
 		private double dmH2O(int zIndex, in double[] gasRates, double eps)
 		{
-			// Code goes here
-			return 0.0;
+			double term1a = pyroGas.flowrate * pyroGas.x[(int)Component.H2O] / Lbed;
+
+			double gTerm1 = -eps * (gasRates[(int)Reaction.SMR] + gasRates[(int)Reaction.WGS]);
+
+			double gTerm2 = (1.0 - eps) * (mChar / MW.Char);
+			gTerm2 /= param.Axs * Lbed * (1.0 - eps);
+			gTerm2 *= -gasRates[(int)Reaction.C2];
+
+			double term2a = (gTerm1 + gTerm2) * param.Axs * MW.H2O;
+
+			return term1a + term2a;
 		}
 
 
@@ -323,5 +411,6 @@ namespace BasicBFB.Model
 			term2 *= mz[(int)Component.Tar] * eps / U;
 			return term1 + term2;
 		}
+
 	}
 }
