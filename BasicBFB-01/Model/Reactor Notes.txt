@@ -4,14 +4,22 @@ Properties
 - Pyrolysis pyro
 - List<double> z
 - List<double[]> mDot
-- double mChar, initialized with a guess passed to constructor as argument
-- Include GasifierParams param 
+- double mChar
+- GasifierParams param 
+- Stream pyrolysisGas
+- double Lbed
 
 - Components in Mdot elements are ordered same as Stream class
 	- (i = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar)
 - Char content quantified by mass holdup in bed (a single number) = mChar
 - z spacing is unknown since ode45 has variable step sizes.  
   Substitute zIndex for z
+
+- Setup
+	- Do pyrolysis
+	- Mix badGasOut and dryGasOut streams to get pyrolysisGas
+	- Add z = 0, and add array with initial conditions to mDot
+	- Initialize mChar with user-provided guess                                    
 
 - Helper functions:
 	- double[] y(zIndex): Mole fractions in gas phase (incl. tar)
@@ -23,6 +31,7 @@ Properties
 	- double Lbed
 	- mDot(N2, O2, H2S) - From badGasOut
 	- double avgEps (avg bed voidage)
+	- double tauP = (1-epsBar)*Lbed / U
 
 - Gasification reaction rate vs. position
 	- rxn_i(z): 5 functions
@@ -49,4 +58,6 @@ Algorithm:
 Results
 	. Clean dry gas mole fractions in effluent
 	. Yield (kg/kg biomass) of Gas, Tar and Char in effluent
-	. 
+
+
+Note: eps_mf = 0.41408 for spherical particles

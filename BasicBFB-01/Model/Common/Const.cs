@@ -48,11 +48,10 @@ namespace BasicBFB.Model.Common
 		 *			6			O2		(may not be used much)
 		 *			7			H2S		(may not be used much)
 		 *			8			Tar		(may not be used much)
-		 *			9			Char	(may not be used much)
 		 */
 
 		public static double[] all = new double[] { MW.CO, MW.CO2, MW.CH4, MW.H2, MW.H2O,
-													   MW.N2, MW.O2, MW.H2S, 1.0, MW.Char };
+													   MW.N2, MW.O2, MW.S, MW.Tar };
 	}
 
 }

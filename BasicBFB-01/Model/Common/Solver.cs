@@ -7,9 +7,46 @@ using System.Threading.Tasks;
 namespace BasicBFB.Model.Common
 {
 	public delegate double Del1(double x);
-		
+	public delegate double Del2(int i);
+
 	public static class Solver
 	{
+		public static double integrate(Del2 f, List<double> z)
+		{
+			double integral = 0.0;
+			int N = z.Length;
+			double z1 = z[0];
+			double f1 = f(0);
+			double z2 = z1;
+			double f2 = f1;
+
+			double dz = 0.0;	// z2 - z1
+			double zmid = 0.0;	// Midway between z1 and z2
+			double fmid = 0.0;	// Linear interpolation of f midway between z1 and z2
+			double m = 0.0;		// Slope of line from (z1, f1) to (z2, f2)
+			double b = 0.0;		// Intercept of that line
+
+			for (int i = 1; i < N; i++)
+			{
+				z1 = z2;
+				f1 = f2;
+
+				z2 = z[i];
+				f2 = f(i);
+				dz = z2 - z1;
+				
+				zmid = z1 + 0.5 * dz;
+				m = (f2 - f1) / dz;
+				b = f2 - m * z2;
+				fmid = m * zmid + b;
+
+				integral += fmid * dz;
+			}
+
+			return integral;
+		}
+
+
 		// Ridder's root finding method
 		// Translated from Numerical Recipes in C
 		public static double ridder(Del1 func, double[] xbounds, double xacc)

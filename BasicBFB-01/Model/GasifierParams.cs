@@ -26,7 +26,8 @@ namespace BasicBFB.Model
 		public int Nor { get; private set; }				// Number of orifices in distributor plate
 		public double mSand { get; private set; }			// Inventory (kg) of sand in reactor
 		public double dSand { get; private set; }			// Avg. sand particle diameter, µm
-		public double rhoSand { get; private set; }			// Sand particle density, kg/m3
+		public double rhoSand { get; private set; }         // Sand particle density, kg/m3
+		public double epsMF = 0.41408;
 
 
 		// Incoming biomass feed and gasifying agent		
@@ -37,7 +38,7 @@ namespace BasicBFB.Model
 		public Stream steamIn { get; private set; }			// Gasifying stream properties
 		public double sbr { get; private set; }             // Steam to biomass ratio, wt/wt
 
-		public double Abed
+		public double Axs
 		{
 			get
 			{
@@ -107,7 +108,8 @@ namespace BasicBFB.Model
 				// Calculate mass rate of steam from sbr, then convert to moles
 				double wH2O = steamIn.x[4] * MW.H2O / steamIn.avgMW;
 				double mDotTot = sbr * bioFeedRate / wH2O;
-				steamIn.flowrate = mDotTot / steamIn.avgMW;
+				steamIn.flowrate = mDotTot;		// Mass flow rate
+				//steamIn.flowrate = mDotTot / steamIn.avgMW;
 			}
 		}
 

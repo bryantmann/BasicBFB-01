@@ -39,7 +39,7 @@ namespace BasicBFB.Model
 		public double p { get; set; }				// bar
 		public double T { get; set; }               // °C
 
-		private double _flowrate = 0.0;				// Mass or molar flow rate (kg/s or mol/s)
+		private double _flowrate = 0.0;				// Mass flow rate (kg/s)
 		public double flowrate
 		{
 			get => _flowrate;
