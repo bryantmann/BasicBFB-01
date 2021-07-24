@@ -16,13 +16,13 @@ namespace BasicBFB.Model.Common
 	}
 
 
-	public static class MW
+	public static class MW		// kg/mol	(the only true mol is gmol)
 	{
-		public const double C = 12.011;
-		public const double H = 1.00794;
-		public const double N = 14.00674;
-		public const double O = 15.9994;
-		public const double S = 32.065;
+		public const double C = 12.011 / 1000.0;
+		public const double H = 1.00794 / 1000.0;
+		public const double N = 14.00674 / 1000.0;
+		public const double O = 15.9994 / 1000.0;
+		public const double S = 32.065 / 1000.0;
 
 		public const double CO = MW.C + MW.O;
 		public const double CO2 = MW.C + 2.0 * MW.O;
@@ -32,7 +32,8 @@ namespace BasicBFB.Model.Common
 		public const double O2 = 2.0 * MW.O;
 		public const double N2 = 2.0 * MW.N;
 		public const double H2S = MW.S + 2.0 * MW.H;
-		public const double Tar = 6.0 * MW.C + 6.0 * MW.H + MW.O;	// As phenol
+		//public const double Tar = 1.0;
+		public const double Tar = 6.0 * MW.C + 6.0 * MW.H + MW.O;   // As phenol
 		public const double Char = MW.C;							// As carbon
 
 		/*	molWts is an Immutable array with MW values at same index as described in Stream class
@@ -46,7 +47,7 @@ namespace BasicBFB.Model.Common
 		 *			4			H2O
 		 *			5			N2		(may not be used much)
 		 *			6			O2		(may not be used much)
-		 *			7			H2S		(may not be used much)
+		 *			7			S		(may not be used much)
 		 *			8			Tar		(may not be used much)
 		 */
 

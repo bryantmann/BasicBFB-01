@@ -94,7 +94,7 @@ namespace BasicBFB.Model
 			steamIn.p = this.p;		// For this model everything's constant T, P
 			steamIn.T = this.T;		// I'm keeping these here for a more complex model
 			
-			if (steamIn.x[4] <= 0)
+			if (steamIn.x[(int)Component.H2O] <= 0)
 			{
 				return;		// Don't set rate for steamIn if there's zero wt% water
 			}

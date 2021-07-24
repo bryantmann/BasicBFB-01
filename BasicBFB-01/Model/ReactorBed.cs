@@ -116,6 +116,7 @@ namespace BasicBFB.Model
 			} else
 			{
 				Console.WriteLine("ReactorBed solve() failed to converge!");
+				Console.WriteLine($"mCharErr = {mCharErr:g4}, LbedErr = {LbedErr:g4}");
 			}
 		}
 
@@ -200,19 +201,17 @@ namespace BasicBFB.Model
 		{
 			this.pyroGas = new Stream(param.T, param.p);
 			double[] f = new double[Stream.numComp];
-			double sumf = 0.0;
 			for (int i = 0; i < Stream.numComp; i++)
 			{
 				f[i] = pyro.dryGasOut.flowrate * pyro.dryGasOut.x[i]
-						+ pyro.badGasOut.flowrate * pyro.dryGasOut.x[i];
-				sumf += f[i];
+						+ pyro.badGasOut.flowrate * pyro.badGasOut.x[i];
 			}
 
-			pyroGas.flowrate = sumf;
+			pyroGas.flowrate = pyro.dryGasOut.flowrate + pyro.badGasOut.flowrate;
 
 			for (int i = 0; i < Stream.numComp; i++)
 			{
-				pyroGas.x[i] = f[i] / sumf;
+				pyroGas.x[i] = f[i] / pyroGas.flowrate;
 			}
 		}
 
@@ -224,7 +223,6 @@ namespace BasicBFB.Model
 			{
 				// Steam components are nonzero at z = 0, rest contribute nothing
 				mz0[i] = param.steamIn.flowrate * param.steamIn.x[i];
-				mz0[i] *= MW.all[i] / param.steamIn.avgMW;
 			}
 		}
 
@@ -447,7 +445,9 @@ namespace BasicBFB.Model
 		// H2O rate expression (dmH2O/dz)
 		private double dmH2O(in double[] gasRates, double eps)
 		{
-			double term1a = pyroGas.flowrate * pyroGas.x[(int)Component.H2O] / Lbed;
+			double mH2O = param.feedIn.flow * param.feedIn.fracMoisture;
+			double term1a = mH2O / Lbed;
+			//double term1a = pyroGas.flowrate * pyroGas.x[(int)Component.H2O] / Lbed;
 
 			double gTerm1 = -eps * (gasRates[(int)Reaction.SMR] + gasRates[(int)Reaction.WGS]);
 
