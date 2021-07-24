@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BasicBFB.Model.Common
 {
-	public delegate double[] OdeDel(double t, double[] y);
+	public delegate double[] OdeDel(double t, in double[] y);
 
 	public class OdeSolver
 	{

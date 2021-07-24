@@ -8,7 +8,8 @@ using BasicBFB.Model.Common;
 
 namespace BasicBFB.Model
 {
-	public class ReactorBed
+	// Well I fucked this one up.
+	public class ReactorBed2
 	{
 		// --------------------------------------------------------------------------------
 		//									PARAMETERS
@@ -17,34 +18,28 @@ namespace BasicBFB.Model
 		public Pyrolysis pyro;
 		Stream pyroGas;
 
-		List<double> zList = new List<double>(200);		
-		List<double[]> mDotList = new List<double[]>(200);  // j = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar
-
-		public double[] mz0;		// double[Stream.numComp]
+		public List<double> z = new List<double>();		
+		public List<double[]> mDot = new List<double[]>();  // j = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar
 
 		public double mChar;
 		public double Lbed;
 		double epsAvg;
 
-		const double TOL = 1.0e-5;      // Relative tolerance for mChar and Lbed convergence
-		const double MAXITER = 50;
+		const double TOL = 1.0e-3;		// Relative tolerance for mChar and Lbed convergence
 
 
 		// --------------------------------------------------------------------------------
 		//									CONSTRUCTOR
 		// --------------------------------------------------------------------------------
-		public ReactorBed(GasifierParams param)
+		public ReactorBed2(GasifierParams param, double mCharGuess)
 		{
 			this.param = param;
+			this.mChar = mCharGuess;
 
 			this.pyro = new Pyrolysis(param);
 			pyro.pyrolize();
-
-			// Initial guess for mChar holdup
-			this.mChar = 0.05 * (pyro.dryFeedIn.flow * pyro.charYield);
-
-			mixPyroGas();				// Instantiates and populates pyroGas
-			setInitialConditions();		// Instantiates and populates mz0
+			mixPyroGas();
+			setInitialConditions();
 
 			// Guess avgEps, then calculate Lbed using that
 			epsAvg = 0.7;
@@ -57,66 +52,9 @@ namespace BasicBFB.Model
 		// --------------------------------------------------------------------------------
 		public void solve()
 		{
-			zList.Clear();
-			mDotList.Clear();
-			double mCharErr = 1.0;
-			double LbedErr = 1.0;
-			bool isConverged = false;
-
+			double[] y0 = (double[]) mDot[0].Clone();
 			double[] zSpan = { 0.0, Lbed };
-			OdeDel ode = dmDot;
-			OdeSolver odeSolver = new OdeSolver();
-
-			int iter0 = 0;
-			int iter1 = 0;
-			int iter2 = 0;
-
-			while (!isConverged && (iter0 < MAXITER)) {
-				iter0++;
-				iter1 = 0;
-				iter2 = 0;
-
-				double mCharOld = mChar;
-				while ((mCharErr > TOL) && (iter1 < MAXITER))
-				{
-					iter1++;
-					(zList, mDotList) = odeSolver.rk45(ode, zSpan, mz0);
-					updateMChar(zList, mDotList);
-					mCharErr = Math.Abs(mChar - mCharOld) / mChar;
-					mCharOld = mChar;
-				}
-
-				double LbedOld = Lbed;
-				updateLbed(zList, mDotList);
-				LbedErr = Math.Abs(Lbed - LbedOld) / Lbed;
-
-				isConverged = ((mCharErr <= TOL) && (LbedErr <= TOL));
-
-				while ((LbedErr > TOL) && (iter2 < MAXITER))
-				{
-					iter2++;
-					LbedOld = Lbed;
-					zSpan[1] = Lbed;
-					(zList, mDotList) = odeSolver.rk45(ode, zSpan, mz0);
-					updateLbed(zList, mDotList);
-					LbedErr = Math.Abs(Lbed - LbedOld) / Lbed;
-				}
-
-				if (!isConverged)
-				{
-					updateMChar(zList, mDotList);
-					mCharErr = Math.Abs(mChar - mCharOld) / mChar;
-					isConverged = ( (mCharErr <= TOL) && (LbedErr <= TOL));
-				}
-			}
-
-			if (isConverged)
-			{
-				Console.WriteLine("ReactorBed solve() converged after {0} cycles", iter0);
-			} else
-			{
-				Console.WriteLine("ReactorBed solve() failed to converge!");
-			}
+			
 		}
 
 
@@ -124,19 +62,19 @@ namespace BasicBFB.Model
 		// --------------------------------------------------------------------------------
 		//							ODE FOR REACTION SYSTEM
 		// --------------------------------------------------------------------------------
-		private double[] dmDot(double z, in double[] mz)
+		private double[] dmDot(int zIndex)
 		{
 			double[] dmdz = new double[Stream.numComp];
-			double[] gasRates = gasifyRates(z, mz);
-			double eps = epsilon(z, mz);
-			double U = gasU(mz);
+			double[] gasRates = gasifyRates(zIndex);
+			double eps = epsilon(zIndex);
+			double U = gasU(zIndex);
 
-			dmdz[(int)Component.CO] = dmCO(mz, gasRates, eps, U);
-			dmdz[(int)Component.CO2] = dmCO2(mz, gasRates, eps, U);
-			dmdz[(int)Component.CH4] = dmCH4(mz, gasRates, eps, U);
-			dmdz[(int)Component.H2] = dmH2(mz, gasRates, eps, U);
-			dmdz[(int)Component.H2O] = dmH2O(gasRates, eps);
-			dmdz[(int)Component.Tar] = dmTar(mz, eps, U);
+			dmdz[(int)Component.CO] = dmCO(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.CO2] = dmCO2(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.CH4] = dmCH4(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.H2] = dmH2(zIndex, gasRates, eps, U);
+			dmdz[(int)Component.H2O] = dmH2O(zIndex, gasRates, eps);
+			dmdz[(int)Component.Tar] = dmTar(zIndex, eps, U);
 			dmdz[(int)Component.N2] = 0.0;
 			dmdz[(int)Component.O2] = 0.0;
 			dmdz[(int)Component.S] = 0.0;
@@ -150,39 +88,38 @@ namespace BasicBFB.Model
 		// --------------------------------------------------------------------------------
 
 		// Calculates new value for mChar and updates this object's mChar parameter value
-		private void updateMChar(in List<double> zs, in List<double[]> mdots)
+		private void updateMChar()
 		{
-			double tauP = meanTauP(zs, mdots);
-			Del3 rCsum = sumCharRates;
-			double integral = Solver.integrate(rCsum, zs, mdots) / Lbed;
+			double tauP = meanTauP();
+			Del2 rCsum = sumCharRates;
+			double integral = Solver.integrate(rCsum, z) / Lbed;
 			double denom = (1.0 / tauP) + integral;
 			mChar = pyro.charYield * pyro.dryFeedIn.flow / denom;
 		}
 
 		// d(tauP)/dz - derivative of particle residence time wrt z as a function of zIndex
-		private double dtauP(double z, in double[] mz)
+		private double dtauP(int zIndex)
 		{
-			double eps = epsilon(z, mz);
-			double U = gasU(mz);
+			double eps = epsilon(zIndex);
+			double U = gasU(zIndex);
 			return (1.0 - eps) / U;
 		}
 
 		// Mean solids residence time tauP
-		private double meanTauP(in List<double> zs, in List<double[]> mdots)
+		private double meanTauP()
 		{
-			Del3 dtau = dtauP;
-			return Solver.integrate(dtau, zs, mdots);
+			Del2 dtau = dtauP;
+			return Solver.integrate(dtau, z);
 		}
 
 		// Function used as integrand in mChar calculation method
-		// Parameter z is not used, it's just so Solver.integrate can be reused
-		private double sumCharRates(double z, in double[] mz)
+		private double sumCharRates(int zIndex)
 		{
 			double Tk = param.T + 273.15;       // T in Kelvin
 
-			double pCO2 = partialP(Component.CO2, mz);
-			double pH2O = partialP(Component.H2O, mz);
-			double pH2 = partialP(Component.H2, mz);
+			double pCO2 = partialP(Component.CO2, zIndex);
+			double pH2O = partialP(Component.H2O, zIndex);
+			double pH2 = partialP(Component.H2, zIndex);
 
 			double rC1 = GasRxn.rateC1(pCO2, Tk);
 			double rC2 = GasRxn.rateC2(pH2O, Tk);
@@ -219,13 +156,15 @@ namespace BasicBFB.Model
 		// Add first point to z = 0, and add initial conditions to mDot
 		private void setInitialConditions()
 		{
-			mz0 = new double[Stream.numComp];
+			z.Add(0.0);
+			double[] mDot0 = new double[Stream.numComp];
 			for (int i = 0; i < Stream.numComp; i++)
 			{
 				// Steam components are nonzero at z = 0, rest contribute nothing
-				mz0[i] = param.steamIn.flowrate * param.steamIn.x[i];
-				mz0[i] *= MW.all[i] / param.steamIn.avgMW;
+				mDot0[i] = param.steamIn.flowrate * param.steamIn.x[i];
+				mDot0[i] *= MW.all[i] / param.steamIn.avgMW;
 			}
+			mDot.Add(mDot0);
 		}
 
 
@@ -235,8 +174,9 @@ namespace BasicBFB.Model
 
 		// Gas phase mole fraction for specified component
 		// at z position corresponding to specified zIndex
-		private double yMolar(Component comp, in double[] mz)
+		private double yMolar(Component comp, int zIndex)
 		{
+			double[] mz = this.mDot[zIndex];
 			double sumMoles = 0.0;
 
 			for (int j = 0; j < Stream.numComp; j++)
@@ -252,22 +192,23 @@ namespace BasicBFB.Model
 
 		// Partial pressure of specified component in gas phase 
 		// at z position for specified index (bara)
-		private double partialP(Component comp, in double[] mz)
+		private double partialP(Component comp, int zIndex)
 		{
-			return param.p * yMolar(comp, mz);
+			return param.p * yMolar(comp, zIndex);
 		}
 
 		// Concentration of specified component in gas at zIndex [=] mol/m3
-		private double conc(Component comp, in double[] mz)
+		private double conc(Component comp, int zIndex)
 		{
 			double Tkelvin = param.T + 273.15;
-			double c = 1.0e5 * partialP(comp, mz) / (Const.Rgas * Tkelvin);
+			double c = 1.0e5 * partialP(comp, zIndex) / (Const.Rgas * Tkelvin);
 			return c;
 		}
 
 		// Superficial gas phase velocity at z[zIndex]
-		private double gasU(double[] mz)
+		private double gasU(int zIndex)
 		{
+			double[] mz = this.mDot[zIndex];
 			double Tkelvin = param.T + 273.15;
 			double u = 0.0;
 
@@ -286,37 +227,38 @@ namespace BasicBFB.Model
 		// --------------------------------------------------------------------------------
 
 		// Estimated bubble size db as a function of height (per zIndex)
-		private double bubbleSize(double z, in double[] mz)
+		private double bubbleSize(int zIndex)
 		{
 			double db = 0.0;
-			double deltaU = gasU(mz) - param.U0;
-			double zTerm = z + 4.0 * Math.Sqrt((param.Axs / ((double)param.Nor)));
+			double zi = z[zIndex];
+			double deltaU = gasU(zIndex) - param.U0;
+			double zTerm = zi + 4.0 * Math.Sqrt((param.Axs / ((double)param.Nor)));
 			db = 0.54 * Math.Pow(Const.g, -0.2) * Math.Pow(deltaU, 0.4);
 			db *= Math.Pow(zTerm, 0.8);
 			return db;
 		}
 
 		// Local bed voidage eps(z) based on zIndex
-		private double epsilon(double z, in double[] mz)
+		private double epsilon(int zIndex)
 		{
-			double deltaU = gasU(mz) - param.U0;
-			double dbTerm = 0.711 * Math.Sqrt(Const.g * bubbleSize(z, mz));
+			double deltaU = gasU(zIndex) - param.U0;
+			double dbTerm = 0.711 * Math.Sqrt(Const.g * bubbleSize(zIndex));
 			double denom = 1.0 + deltaU / dbTerm;
 			return 1.0 - (1.0 - param.epsMF) / denom;
 		}
 
 		// Average voidage of the whole fluidized bed
-		private double avgEpsilon(in List<double> zs, in List<double[]> mDots)
+		private double avgEpsilon()
 		{
-			Del3 eps = epsilon;
-			double epsIntegral = Solver.integrate(eps, zs, mDots);
+			Del2 eps = epsilon;
+			double epsIntegral = Solver.integrate(eps, z);
 			return epsIntegral / Lbed;
 		}
 
 		// Calculate height of bubbling bed and set value of Lbed
-		private void updateLbed(in List<double> zs, in List<double[]> mDots)
+		private void updateBedHeight()
 		{
-			epsAvg = avgEpsilon(zs, mDots);
+			epsAvg = avgEpsilon();
 			Lbed = param.L0 * (1.0 - param.epsMF) / (1.0 - epsAvg);
 		}
 
@@ -328,21 +270,21 @@ namespace BasicBFB.Model
 		// Gasification reaction rates returned in array
 		// Order is rC1, rC2, rC3, rSMR, rWGS
 		// Indexed the same as Reaction enumeration raw values
-		private double[] gasifyRates(double z, in double[] mz)
+		private double[] gasifyRates(int zIndex)
 		{
 			double[] rates = new double[5];		// rC1, rC2, rC3, rSMR, rWGS
 			double Tk = param.T + 273.15;       // T in Kelvin
 
-			double pCO2 = partialP(Component.CO2, mz);
-			double pH2O = partialP(Component.H2O, mz);
-			double pH2  = partialP(Component.H2, mz);
+			double pCO2 = partialP(Component.CO2, zIndex);
+			double pH2O = partialP(Component.H2O, zIndex);
+			double pH2  = partialP(Component.H2, zIndex);
 
 			double[] cGas = new double[5];      // CO, CO2, CH4, H2, H2O
-			cGas[0] = conc(Component.CO, mz);
-			cGas[1] = conc(Component.CO2, mz);
-			cGas[2] = conc(Component.CH4, mz);
-			cGas[3]  = conc(Component.H2, mz);
-			cGas[4] = conc(Component.H2O, mz);
+			cGas[0] = conc(Component.CO, zIndex);
+			cGas[1] = conc(Component.CO2, zIndex);
+			cGas[2] = conc(Component.CH4, zIndex);
+			cGas[3]  = conc(Component.H2, zIndex);
+			cGas[4] = conc(Component.H2O, zIndex);
 
 			rates[0] = GasRxn.rateC1(pCO2, Tk);
 			rates[1] = GasRxn.rateC2(pH2O, Tk);
@@ -355,7 +297,7 @@ namespace BasicBFB.Model
 
 
 		// CO rate expression (dmCO/dz)
-		private double dmCO(in double[] mz, in double[] gasRates, double eps, double U)
+		private double dmCO(int zIndex, in double[] gasRates, double eps, double U)
 		{
 			double gTerm1 = eps * (gasRates[(int)Reaction.SMR] - gasRates[(int)Reaction.WGS]);
 			
@@ -368,6 +310,7 @@ namespace BasicBFB.Model
 			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
 			term1b *= pyro.dryGasOut.x[(int)Component.CO] / Lbed;
 
+			double[] mz = mDot[zIndex];
 			double mzTar = mz[(int)Component.Tar];
 
 			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
@@ -378,7 +321,7 @@ namespace BasicBFB.Model
 
 
 		// CO2 rate expression (dmCO2/dz)
-		private double dmCO2(in double[] mz, in double[] gasRates, double eps, double U)
+		private double dmCO2(int zIndex, in double[] gasRates, double eps, double U)
 		{
 			double gTerm1 = eps * gasRates[(int)Reaction.WGS];
 
@@ -391,6 +334,7 @@ namespace BasicBFB.Model
 			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
 			term1b *= pyro.dryGasOut.x[(int)Component.CO2] / Lbed;
 
+			double[] mz = mDot[zIndex];
 			double mzTar = mz[(int)Component.Tar];
 
 			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
@@ -401,7 +345,7 @@ namespace BasicBFB.Model
 
 
 		// CH4 rate expression (dmCH4/dz)
-		private double dmCH4(in double[] mz, in double[] gasRates, double eps, double U)
+		private double dmCH4(int zIndex, in double[] gasRates, double eps, double U)
 		{
 			double gTerm1 = -gasRates[(int)Reaction.SMR] * eps;
 
@@ -414,6 +358,7 @@ namespace BasicBFB.Model
 			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
 			term1b *= pyro.dryGasOut.x[(int)Component.CH4] / Lbed;
 
+			double[] mz = mDot[zIndex];
 			double mzTar = mz[(int)Component.Tar];
 
 			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
@@ -423,7 +368,7 @@ namespace BasicBFB.Model
 		}
 
 		// H2 rate expression (dmH2/dz)
-		private double dmH2(in double[] mz, in double[] gasRates, double eps, double U)
+		private double dmH2(int zIndex, in double[] gasRates, double eps, double U)
 		{
 			double gTerm1 = eps * (3.0 * gasRates[(int)Reaction.SMR] + gasRates[(int)Reaction.WGS]);
 
@@ -436,6 +381,7 @@ namespace BasicBFB.Model
 			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
 			term1b *= pyro.dryGasOut.x[(int)Component.H2] / Lbed;
 
+			double[] mz = mDot[zIndex];
 			double mzTar = mz[(int)Component.Tar];
 
 			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
@@ -445,7 +391,7 @@ namespace BasicBFB.Model
 		}
 
 		// H2O rate expression (dmH2O/dz)
-		private double dmH2O(in double[] gasRates, double eps)
+		private double dmH2O(int zIndex, in double[] gasRates, double eps)
 		{
 			double term1a = pyroGas.flowrate * pyroGas.x[(int)Component.H2O] / Lbed;
 
@@ -462,8 +408,9 @@ namespace BasicBFB.Model
 
 
 		// Tar rate expression (dmTar/dz)
-		private double dmTar(in double[] mz, double eps, double U)
+		private double dmTar(int zIndex, double eps, double U)
 		{
+			double[] mz = mDot[zIndex];
 			double term1 = pyro.tarYield * pyro.dryFeedIn.flow / Lbed;
 			double term2 = -pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);
 			term2 *= mz[(int)Component.Tar] * eps / U;

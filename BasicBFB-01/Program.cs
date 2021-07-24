@@ -10,7 +10,11 @@ namespace BasicBFB
 	{
 		static void Main(string[] args)
 		{
-			//GasifierParams param = ExampleData.gasifierParams();
+			GasifierParams param = ExampleData.gasifierParams();
+			ReactorBed reactorBed = new ReactorBed(param);
+
+			reactorBed.solve();
+
 			//Pyrolysis pyro = new Pyrolysis(param);
 			//pyro.pyrolize();
 
@@ -36,9 +40,6 @@ namespace BasicBFB
 			//s += String.Format("    xCH4: {0:g3}   xH2:  {1:g3}", xGas[2], xGas[3]);
 			//s += "\n" + dashes + "\n";
 			//Console.WriteLine(s);
-
-			OdeTest odeTest = new OdeTest();
-			odeTest.springTest();
 
 			Console.ReadKey();
 		}

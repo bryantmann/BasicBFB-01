@@ -13,7 +13,7 @@ namespace BasicBFB.Testing
 	{
 		public double[] tRange = { 0.0, 30.0 };
 
-		public double[] springODE(double t, double[] y)
+		public double[] springODE(double t, in double[] y)
 		{
 			double[] dy = new double[2];
 			dy[0] = y[1];		// dx/dt = v

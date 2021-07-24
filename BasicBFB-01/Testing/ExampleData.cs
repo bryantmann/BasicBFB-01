@@ -36,7 +36,7 @@ namespace BasicBFB.Testing
 		public static Stream pureSteam()
 		{
 			double[] y = new double[Stream.numComp];
-			for (int i = 0; i < w.Length; i++)
+			for (int i = 0; i < y.Length; i++)
 			{
 				y[i] = 0.0;
 			}
@@ -44,7 +44,7 @@ namespace BasicBFB.Testing
 			y[(int)Component.H2O] = 0.9;     // Index for H2O
 			y[(int)Component.N2] = 0.1;
 
-			Stream steam = new Stream(w, temp: T0, press: p0, true);
+			Stream steam = new Stream(y, temp: T0, press: p0, true);
 			return steam;
 		}
 
@@ -60,10 +60,10 @@ namespace BasicBFB.Testing
 			
 			p.setBedParams(U0: 0.25, L0: 0.32, Nor: 50, mSand: 8.0, dSand: 250.0, rhoSand: 2600.0);
 
+			Stream steam = pureSteam();
 			p.setFeedParams(source: "Sawdust", feedRate: 3.75,
 							dFeed: 500.0, feedIn: sawdust, stmIn: steam, sbRatio: 2.0);
 
-			Stream steam = pureSteam();
 
 			p.setupStreams();
 			return p;
