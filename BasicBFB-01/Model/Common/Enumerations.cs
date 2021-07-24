@@ -39,4 +39,15 @@ namespace BasicBFB.Model.Common
 		S = 7,
 		Tar = 8
 	}
+
+
+	// Gasification reaction types - Raw values coincide with array index
+	public enum Reaction: int
+	{
+		C1 = 0,
+		C2 = 1, 
+		C3 = 2, 
+		SMR = 3,
+		WGS = 4
+	}
 }

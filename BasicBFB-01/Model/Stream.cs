@@ -29,7 +29,6 @@ namespace BasicBFB.Model
 	 *			[9			Char	(removed)]
 	 */
 
-
 	public class Stream
 	{
 		public static int numComp = 9;
@@ -62,7 +61,6 @@ namespace BasicBFB.Model
 		// ---------------------------- CONSTRUCTORS --------------------------------
 		// --------------------------------------------------------------------------
 			
-
 		// Default constructor.  temp in units of Celsius, and press in unit of bars
 		public Stream(double temp = 25.0, double press = 1.01325, bool isMolar = false)
 		{
@@ -98,9 +96,6 @@ namespace BasicBFB.Model
 		// --------------------------------------------------------------------------
 		// -------------------------------- METHODS ---------------------------------
 		// --------------------------------------------------------------------------
-
-
-
 
 		public void setX(double[] newX)
 		{

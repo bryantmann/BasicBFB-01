@@ -11,7 +11,7 @@ namespace BasicBFB.Model.Common
 
 	public static class Solver
 	{
-		public static double integrate(Del2 f, List<double> z)
+		public static double integrate(Del2 f, in List<double> z)
 		{
 			double integral = 0.0;
 			int N = z.Length;

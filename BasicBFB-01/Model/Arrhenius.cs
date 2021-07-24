@@ -35,22 +35,8 @@ namespace BasicBFB.Model
 
 
 		// The following method calculates yields from the first set of pyro reactions
-		// The Phase enumeration type is provided as one of the arguments
-		static public double pyroYield(double T, Phase phi)
-		{
-			double yield = 0.0;
-			double[] kPyro = pyroRateConstants(T);
-			double kx = kPyro[(int)phi];	// Value depends on choice of Phase value
-											// Enum raw values already chosen to line up
-
-			double ksum = kPyro[0] + kPyro[1] + kPyro[2];
-			yield = kx / ksum;
-
-			return yield;
-		}
-
-
-		// Same thing but rate constants are passed as an argument
+		// The Phase enumeration type is provided as one of the arguments and rate
+		// constants are passed as another
 		static public double pyroYield(double[] kPyro, Phase phi)
 		{
 			double yield = 0.0;
@@ -63,6 +49,8 @@ namespace BasicBFB.Model
 			return yield;
 		}
 
+		// Mass fractions of CO, CO2, CH4 and H2 in gas when tar is pyrolized
+		public static double[] wTarPyro = { 0.7222, 0.1422, 0.1133, 0.0222 };
 	}
 
 

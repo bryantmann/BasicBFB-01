@@ -179,6 +179,149 @@ namespace BasicBFB.Model
 		}
 
 
+		// --------------------------------------------------------------------------------
+		//						REACTION RATE CALCS - HELPERS
+		// --------------------------------------------------------------------------------
 
+		// Gasification reaction rates returned in array
+		// Order is rC1, rC2, rC3, rSMR, rWGS
+		// Indexed the same as Reaction enumeration raw values
+		private double[] gasifyRates(int zIndex)
+		{
+			double[] rates = new double[5];		// rC1, rC2, rC3, rSMR, rWGS
+			double Tk = param.T + 273.15;       // T in Kelvin
+
+			double pCO2 = partialP(Component.CO2, zIndex);
+			double pH2O = partialP(Component.H2O, zIndex);
+			double pH2  = partialP(Component.H2, zIndex);
+
+			double[] cGas = new double[5];      // CO, CO2, CH4, H2, H2O
+			cGas[0] = conc(Component.CO, zIndex);
+			cGas[1] = conc(Component.CO2, zIndex);
+			cGas[2] = conc(Component.CH4, zIndex);
+			cGas[3]  = conc(Component.H2, zIndex);
+			cGas[4] = conc(Component.H2O, zIndex);
+
+			rates[0] = GasRxn.rateC1(pCO2, Tk);
+			rates[1] = GasRxn.rateC2(pH2O, Tk);
+			rates[2] = GasRxn.rateC3(pH2, Tk);
+			rates[3] = GasRxn.rateSMR(cGas[2], cGas[4], Tk);
+			rates[4] = GasRxn.rateWGS(cGas[0], cGas[1], cGas[3], cGas[4], Tk);
+
+			return rates;
+		}
+
+
+		// CO rate expression (dmCO/dz)
+		private double dmCO(int zIndex, in double[] gasRates, double eps, double U)
+		{
+			double gTerm1 = eps * (gasRates[(int)Reaction.SMR] - gasRates[(int)Reaction.WGS]);
+			
+			double gTerm2 = (1.0 - eps) * (mChar / MW.Char);
+			gTerm2 /= param.Axs * Lbed * (1.0 - eps);
+			gTerm2 *= 2.0 * gasRates[(int)Reaction.C1] + gasRates[(int)Reaction.C2];
+			
+			double dmGas = (gTerm1 + gTerm2) * param.Axs * MW.CO;	// A major term
+
+			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
+			term1b *= pyro.dryGasOut.x[(int)Component.CO] / Lbed;
+
+			double[] mz = mDot[zIndex];
+			double mzTar = mz[(int)Component.Tar];
+
+			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
+			term2b *= (mzTar * eps / U) * Arrhenius.wTarPyro[(int)Component.CO];
+
+			return term1b + term2b + dmGas;
+		}
+
+
+		// CO2 rate expression (dmCO2/dz)
+		private double dmCO2(int zIndex, in double[] gasRates, double eps, double U)
+		{
+			double gTerm1 = eps * gasRates[(int)Reaction.WGS];
+
+			double gTerm2 = (1.0 - eps) * (mChar / MW.Char);
+			gTerm2 /= param.Axs * Lbed * (1.0 - eps);
+			gTerm2 *= -gasRates[(int)Reaction.C1];
+
+			double dmGas = (gTerm1 + gTerm2) * param.Axs * MW.CO2;  // A major term
+
+			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
+			term1b *= pyro.dryGasOut.x[(int)Component.CO2] / Lbed;
+
+			double[] mz = mDot[zIndex];
+			double mzTar = mz[(int)Component.Tar];
+
+			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
+			term2b *= (mzTar * eps / U) * Arrhenius.wTarPyro[(int)Component.CO2];
+
+			return term1b + term2b + dmGas;
+		}
+
+
+		// CH4 rate expression (dmCH4/dz)
+		private double dmCH4(int zIndex, in double[] gasRates, double eps, double U)
+		{
+			double gTerm1 = -gasRates[(int)Reaction.SMR] * eps;
+
+			double gTerm2 = (1.0 - eps) * (mChar / MW.Char);
+			gTerm2 /= param.Axs * Lbed * (1.0 - eps);
+			gTerm2 *= gasRates[(int)Reaction.C3];
+
+			double dmGas = (gTerm1 + gTerm2) * param.Axs * MW.CH4;   // A major term
+
+			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
+			term1b *= pyro.dryGasOut.x[(int)Component.CH4] / Lbed;
+
+			double[] mz = mDot[zIndex];
+			double mzTar = mz[(int)Component.Tar];
+
+			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
+			term2b *= (mzTar * eps / U) * Arrhenius.wTarPyro[(int)Component.CH4];
+
+			return term1b + term2b + dmGas;
+		}
+
+		// H2 rate expression (dmH2/dz)
+		private double dmH2(int zIndex, in double[] gasRates, double eps, double U)
+		{
+			double gTerm1 = eps * (3.0 * gasRates[(int)Reaction.SMR] + gasRates[(int)Reaction.WGS]);
+
+			double gTerm2 = (1.0 - eps) * (mChar / MW.Char);
+			gTerm2 /= param.Axs * Lbed * (1.0 - eps);
+			gTerm2 *= gasRates[(int)Reaction.C2] - 2.0 * gasRates[(int)Reaction.C3];
+
+			double dmGas = (gTerm1 + gTerm2) * param.Axs * MW.H2;  // A major term
+
+			double term1b = pyro.gasYield * pyro.dryFeedIn.flow;    // A major term
+			term1b *= pyro.dryGasOut.x[(int)Component.H2] / Lbed;
+
+			double[] mz = mDot[zIndex];
+			double mzTar = mz[(int)Component.Tar];
+
+			double term2b = pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);    // A major term
+			term2b *= (mzTar * eps / U) * Arrhenius.wTarPyro[(int)Component.H2];
+
+			return term1b + term2b + dmGas;
+		}
+
+		// H2O rate expression (dmH2O/dz)
+		private double dmH2O(int zIndex, in double[] gasRates, double eps)
+		{
+			// Code goes here
+			return 0.0;
+		}
+
+
+		// Tar rate expression (dmTar/dz)
+		private double dmTar(int zIndex, double eps, double U)
+		{
+			double[] mz = mDot[zIndex];
+			double term1 = pyro.tarYield * pyro.dryFeedIn.flow / Lbed;
+			double term2 = -pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);
+			term2 *= mz[(int)Component.Tar] * eps / U;
+			return term1 + term2;
+		}
 	}
 }
