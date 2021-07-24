@@ -52,19 +52,20 @@ namespace BasicBFB.Model
 				_flowrate = value;
 			}
 		}
-
+		
+		
 		static public string[] componentNames = new string[9] { "CO", "CO2", "CH4", "H2",
 																"H2O", "N2", "O2", "S species",
 																"Tar"};
 
-		// --------------------------------------------------------------------------
-		// ---------------------------- CONSTRUCTORS --------------------------------
-		// --------------------------------------------------------------------------
-			
+		// --------------------------------------------------------------------------------
+		//									CONSTRUCTORS
+		// --------------------------------------------------------------------------------
+
 		// Default constructor.  temp in units of Celsius, and press in unit of bars
-		public Stream(double temp = 25.0, double press = 1.01325, bool isMolar = false)
+		public Stream(double temp = 600.0, double press = 1.01325, bool isMolar = false)
 		{
-			x = new double[] {0.2, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0};  
+			x = new double[] { 0.2, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0 };
 			this.isMolar = isMolar;
 			this.p = press;
 			this.T = temp;
@@ -73,13 +74,13 @@ namespace BasicBFB.Model
 
 		// Alternate constructor for initializing with a known composition for x
 		// User can input newX array of any length up to value of Stream.numComp
-		public Stream(double[] newX, double temp = 25.0, double press = 1.01325, bool isMolar = false)
+		public Stream(double[] newX, double temp = 600.0, double press = 1.01325, bool isMolar = false)
 		{
 			this.isMolar = isMolar;
 			this.p = press;
 			this.T = temp;
 			this.x = new double[10];
-			
+
 			int n = newX.Length;
 			if (n > Stream.numComp)
 			{
@@ -90,6 +91,29 @@ namespace BasicBFB.Model
 			{
 				this.x[i] = newX[i];
 			}
+		}
+
+
+		// --------------------------------------------------------------------------------
+		//								BUILDER METHODS
+		// --------------------------------------------------------------------------------
+
+		// Creates a new stream from mass flow rates.  Defaults to mass basis
+		static public Stream CreateFromMassRates(double[] mDot, double T, double p, 
+												 bool isMolar = false) 
+		{
+			Stream stream = new Stream(T, p, isMolar);
+			stream.mDot = mDot;
+			return stream;
+		}
+
+		// Creates new stream from molar flow rates.  Defaults to molar basis
+		static public Stream CreateFromMoleRates(double[] nDot, double T, double p,
+												 bool isMolar = true)
+		{
+			Stream stream = new Stream(T, p, isMolar);
+			stream.mDot = nDot;
+			return stream;
 		}
 
 
@@ -283,10 +307,9 @@ namespace BasicBFB.Model
 		}
 
 
-		// --------------------------------------------------------------------------
-		// ---------------------Computed Properties ---------------------------------
-		// --------------------------------------------------------------------------
-
+		// --------------------------------------------------------------------------------
+		//								COMPUTED PROPERTIES
+		// --------------------------------------------------------------------------------
 
 		// This returns the avg MW of the stream ignoring Tar and Char (assumes it is 0)
 		public double avgMW
@@ -294,7 +317,7 @@ namespace BasicBFB.Model
 			get
 			{
 				double avg = 0.0;
-				int n = numComp;   
+				int n = numComp;
 
 				// Copy the first numComp-2 values from x into local variable y and normalize
 				// Normalization excludes char and tar since they are mostly not gas phase
@@ -322,6 +345,143 @@ namespace BasicBFB.Model
 			}
 		}
 
+
+		// Component mass rates
+		public double[] mDot
+		{
+			get
+			{
+				double[] rates = new double[numComp];
+				for (int j = 0; j < numComp; j++)
+				{
+					rates[j] = x[j] * _flowrate;
+				}
+
+				if (isMolar)
+				{
+					for (int j = 0; j < numComp; j++)
+					{
+						rates[j] = rates[j] * MW.all[j];
+					}
+				}
+				return rates;
+			}
+
+			set
+			{
+				double[] rates = new double[numComp];
+				double sumRates = 0.0;
+				for (int j = 0; j < numComp; j++)
+				{
+					rates[j] = isMolar ? (value[j] / MW.all[j]) : value[j];
+					sumRates += rates[j];
+				}
+
+				flowrate = sumRates;
+				for (int j = 0; j < numComp; j++)
+				{
+					x[j] = (sumRates > 0.0) ? (rates[j] / sumRates) : 0.0;
+				}
+			}
+		}
+
+
+		// Component molar rates
+		public double[] nDot
+		{
+			get
+			{
+				double[] rates = new double[numComp];
+				for (int j = 0; j < numComp; j++)
+				{
+					rates[j] = x[j] * _flowrate;
+				}
+
+				if (!isMolar)
+				{
+					for (int j = 0; j < numComp; j++)
+					{
+						rates[j] = rates[j] / MW.all[j];
+					}
+				}
+				return rates;
+			}
+
+			set
+			{
+				double[] rates = new double[numComp];
+				double sumRates = 0.0;
+				for (int j = 0; j < numComp; j++)
+				{
+					rates[j] = isMolar ? value[j] : (value[j] * MW.all[j]);
+					sumRates += rates[j];
+				}
+
+				flowrate = sumRates;
+				for (int j = 0; j < numComp; j++)
+				{
+					x[j] = (sumRates > 0.0) ? (rates[j] / sumRates) : 0.0;
+				}
+			}
+		}
+
+
+		// Total mass rate
+		public double mDotTotal
+		{
+			get
+			{
+				if (isMolar)
+				{
+					double[] massRates = mDot;
+					double sumRates = 0.0;
+					foreach (double mi in massRates)
+					{
+						sumRates += mi;
+					}
+					return sumRates;
+				}
+				else
+				{
+					return _flowrate;
+				}
+			}
+
+			set
+			{
+				if (isMolar)
+				{
+					flowrate = value / avgMW;
+				}
+				else
+				{
+					flowrate = value;
+				}
+			}
+		}
+
+
+		// Total molar rate
+		public double nDotTotal
+		{
+			get
+			{
+				if (isMolar)
+				{
+					return _flowrate;
+				}
+				else
+				{
+					double[] moleRates = nDot;
+					double sumRates = 0.0;
+					foreach (double ni in moleRates)
+					{
+						sumRates += ni;
+					}
+					return sumRates;
+				}
+			}
+		}
 
 	}
 }

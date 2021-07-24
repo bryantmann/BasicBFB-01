@@ -10,8 +10,10 @@ namespace BasicBFB.Model.Common
 	{
 		public const double pi = 3.1415926535897932384626433832795028841971693993751;
 		public const double Rgas = 8.31446261815324;    // J / mol.K
-		public const double g = 9.81;					// m/s2
+		public const double g = 9.81;                   // m/s2
 
+		public const double TOL = 1.0e-5;      // Relative tolerance for mChar and Lbed convergence
+		public const double MAXITER = 50;		// Max number of iterations for loops in reactor solvers
 		public const double NORM_TOL = 1.0e-7;			// Normalized enough
 	}
 

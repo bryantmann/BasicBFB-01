@@ -17,17 +17,18 @@ namespace BasicBFB.Model
 		public Pyrolysis pyro;
 		Stream pyroGas;
 
-		List<double> zList = new List<double>(200);		
-		List<double[]> mDotList = new List<double[]>(200);  // j = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar
+		public Effluent effluent { get; private set; }
 
-		public double[] mz0;		// double[Stream.numComp]
+		public List<double> zList { get; private set; }	
+		public List<double[]> mDotList { get; private set; }	
+		// j = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar
 
-		public double mChar;
-		public double Lbed;
-		double epsAvg;
+		private double[] mz0;			// double[Stream.numComp]
 
-		const double TOL = 1.0e-5;      // Relative tolerance for mChar and Lbed convergence
-		const double MAXITER = 50;
+		public double mChar;			// Char holdup, kg
+		public double Lbed;				// Height of expanded fluidized bed, m
+		double epsAvg;					// Average void fraction of bed
+		public double mDotCharOut;		// Mass rate of char particles exiting the bed
 
 
 		// --------------------------------------------------------------------------------
@@ -38,10 +39,14 @@ namespace BasicBFB.Model
 			this.param = param;
 
 			this.pyro = new Pyrolysis(param);
+			this.zList = new List<double>(200);
+			this.mDotList = new List<double[]>(200);
+
 			pyro.pyrolize();
 
 			// Initial guess for mChar holdup
 			this.mChar = 0.05 * (pyro.dryFeedIn.flow * pyro.charYield);
+			this.mDotCharOut = 0.0;
 
 			mixPyroGas();				// Instantiates and populates pyroGas
 			setInitialConditions();		// Instantiates and populates mz0
@@ -49,12 +54,20 @@ namespace BasicBFB.Model
 			// Guess avgEps, then calculate Lbed using that
 			epsAvg = 0.7;
 			Lbed = param.L0 * (1.0 - param.epsMF) / (1.0 - epsAvg);
+			this.effluent = new Effluent();
 		}
 
 
 		// --------------------------------------------------------------------------------
-		//							MAIN CALCULATION ALGORITHM
+		//							MAIN CALCULATION ALGORITHMS
 		// --------------------------------------------------------------------------------
+		
+		public Effluent calcEffluent()
+		{
+			solve();
+			return effluent;
+		}
+
 		public void solve()
 		{
 			zList.Clear();
@@ -71,13 +84,13 @@ namespace BasicBFB.Model
 			int iter1 = 0;
 			int iter2 = 0;
 
-			while (!isConverged && (iter0 < MAXITER)) {
+			while (!isConverged && (iter0 < Const.MAXITER)) {
 				iter0++;
 				iter1 = 0;
 				iter2 = 0;
 
 				double mCharOld = mChar;
-				while ((mCharErr > TOL) && (iter1 < MAXITER))
+				while ((mCharErr > Const.TOL) && (iter1 < Const.MAXITER))
 				{
 					iter1++;
 					(zList, mDotList) = odeSolver.rk45(ode, zSpan, mz0);
@@ -90,9 +103,9 @@ namespace BasicBFB.Model
 				updateLbed(zList, mDotList);
 				LbedErr = Math.Abs(Lbed - LbedOld) / Lbed;
 
-				isConverged = ((mCharErr <= TOL) && (LbedErr <= TOL));
+				isConverged = ((mCharErr <= Const.TOL) && (LbedErr <= Const.TOL));
 
-				while ((LbedErr > TOL) && (iter2 < MAXITER))
+				while ((LbedErr > Const.TOL) && (iter2 < Const.MAXITER))
 				{
 					iter2++;
 					LbedOld = Lbed;
@@ -106,17 +119,20 @@ namespace BasicBFB.Model
 				{
 					updateMChar(zList, mDotList);
 					mCharErr = Math.Abs(mChar - mCharOld) / mChar;
-					isConverged = ( (mCharErr <= TOL) && (LbedErr <= TOL));
+					isConverged = ( (mCharErr <= Const.TOL) && (LbedErr <= Const.TOL));
 				}
 			}
 
 			if (isConverged)
 			{
 				Console.WriteLine("ReactorBed solve() converged after {0} cycles", iter0);
+				int iMax = zList.Count - 1;     // Last index of zList and mDotList
+				this.effluent = new Effluent(mDotList[iMax], zList[iMax], param, mDotCharOut);
 			} else
 			{
 				Console.WriteLine("ReactorBed solve() failed to converge!");
 				Console.WriteLine($"mCharErr = {mCharErr:g4}, LbedErr = {LbedErr:g4}");
+				//this.effluent = new Effluent();
 			}
 		}
 
@@ -158,6 +174,8 @@ namespace BasicBFB.Model
 			double integral = Solver.integrate(rCsum, zs, mdots) / Lbed;
 			double denom = (1.0 / tauP) + integral;
 			mChar = pyro.charYield * pyro.dryFeedIn.flow / denom;
+
+			mDotCharOut = mChar / tauP;
 		}
 
 		// d(tauP)/dz - derivative of particle residence time wrt z as a function of zIndex
