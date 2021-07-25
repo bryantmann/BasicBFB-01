@@ -148,39 +148,6 @@ namespace BasicBFB.Model
 
 		}
 
-		// TODO: Trim unused methods and properties, starting in Stream
-
-
-		public void normalizeGasFractions()
-		{
-			double sumX = 0.0;
-			int n = Stream.numComp;        // Excludes the last two components, Tar and Char
-			if (n <= 0)
-			{
-				throw new ArgumentOutOfRangeException(
-					$"Not enough components, only {n} components left after dropping tar and char");
-			}
-
-			for (int i = 0; i < n; i++)
-			{
-				sumX += x[i];
-			}
-
-			if (sumX <= 0.0)
-			{
-				throw new ArgumentOutOfRangeException(
-					$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
-			}
-
-			for (int i = 0; i < n; i++)
-			{
-				x[i] /= sumX;
-			}
-
-			// Zero out tar and char mass fractions
-			x[n] = 0.0;
-			x[n + 1] = 0.0;
-		}
 
 		// Returns an array of length n = numComp - 2
 		public double[] gasesNormalized()
@@ -212,80 +179,6 @@ namespace BasicBFB.Model
 			}
 
 			return y;
-		}
-
-
-		// Normalize all components in x including tar, char so they sum to 1.0
-		public void normalizeAllFractions()
-		{
-			double sumX = 0.0;
-			for (int i = 0; i < Stream.numComp; i++)
-			{
-				sumX += x[i];
-			}
-
-			if (sumX <= 0.0)
-			{
-				throw new ArgumentOutOfRangeException(
-					$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
-			}
-
-			for (int i = 0; i < Stream.numComp; i++)
-			{
-				x[i] /= sumX;
-			}
-
-		}
-
-
-		// Returns an array of length Stream.numComp containing normalized fractions
-		public double[] allNormalized()		{
-			if (Stream.numComp < 3)
-			{
-				throw new ArgumentOutOfRangeException(
-					$"Not enough components, only {Stream.numComp} components in Stream");
-			}
-
-			double[] allX = new double[Stream.numComp];
-			double sumX = 0.0;
-
-			for (int i = 0; i < Stream.numComp; i++)
-			{
-				sumX += x[i];
-			}
-
-			if (sumX <= 0.0)
-			{
-				throw new ArgumentOutOfRangeException(
-					$"Sum of component fractions must be > 0 to normalize; instead it is {sumX}");
-			}
-
-			for (int i = 0; i < Stream.numComp; i++)
-			{
-				allX[i] = x[i] / sumX;
-			}
-
-			return allX;
-		}
-
-
-		// Checks if the sum if X equals 1.0 within a tolerance NORM_TOL
-		public bool isNormalized()
-		{
-			bool normal;
-			double d = 1.0 - sumX();
-			normal = Math.Abs(d) < Const.NORM_TOL;
-			return normal;
-		}
-
-		public double sumX()
-		{
-			double sum = 0.0;
-			foreach (double xi in x)
-			{
-				sum += xi;
-			}
-			return sum;
 		}
 
 

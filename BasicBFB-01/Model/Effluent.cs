@@ -16,8 +16,11 @@ namespace BasicBFB.Model
 		public double[] productYields;  // Wt frac. dry product gas, tar, and char
 		public double mDotProducts = 0.0;
 
+		public double mDotCharOut = 0.0;
+
 		public double z = 0.0;			// Height in reactor where effluent is measured
 
+		// TODO: Revise to accomodate extra char term in ReactorFreeboard.mDotList[i]
 
 		// --------------------------------------------------------------------------------
 		//									CONSTRUCTORS
@@ -55,6 +58,7 @@ namespace BasicBFB.Model
 		public Effluent(double[] mDot, double zOut, GasifierParams param, double mDotCharOut = 0.0)
 		{
 			this.z = zOut;
+			this.mDotCharOut = mDotCharOut;
 			this.total = Stream.CreateFromMassRates(mDot, param.T, param.p, false);
 
 			double[] mDotProductGas = new double[Stream.numComp];

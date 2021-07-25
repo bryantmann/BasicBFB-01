@@ -37,7 +37,8 @@ namespace BasicBFB.Model.Common
 		N2 = 5,
 		O2 = 6,
 		S = 7,
-		Tar = 8
+		Tar = 8,
+		Char = 9
 	}
 
 
