@@ -7,36 +7,40 @@ using System.Threading.Tasks;
 namespace BasicBFB.Model.Common
 {
 	public delegate double[] OdeDel(double t, in double[] y);
-
+	
+	
 	public class OdeSolver
 	{
 		// --------------------------------------------------------------------------------
-		// Parameters for the Dormand-Prince numerical ODE algorithm (used in MATLAB's ode45)
+		// Parameters for the Dormand-Prince numerical ODE algorithm
 		// --------------------------------------------------------------------------------
-		public const double pow = 0.2;
+		public static readonly double pow = 0.2;
 
-		public static double[] A = { 0.0, 0.2, 0.3, 0.8, (8.0 / 9.0), 1.0, 1.0 };
+		public static readonly double[] A = { 0.0, 0.2, 0.3, 0.8, (8.0 / 9.0), 1.0, 1.0 };
 
-		public static double[,] B = {   { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-										{ (1.0 / 5.0), 0.0, 0.0, 0.0, 0.0, 0.0 },
-										{ (3.0 / 40.0), (9.0 / 40.0), 0.0, 0.0, 0.0, 0.0 },
-										{ (44.0 / 45.0), (-56.0 / 15.0), (32.0 / 9.0), 0.0, 0.0, 0.0 },
-										{ (19372.0 / 6561.0), (-25360.0 / 2187.0), (64448.0 / 6561.0), (-212.0 / 729.0), 0.0, 0.0 },
-										{ (9017.0 / 3168.0), (-355.0 / 33.0), (46732.0 / 5247.0), (49.0 / 176.0), (-5103.0 / 18656.0), 0.0 },
-										{ (35.0 / 384.0), 0.0, (500.0 / 1113.0), (125.0 / 192.0), (-2187.0 / 6784.0), (11.0 / 84.0) }
-									};
+		public static readonly double[,] B = {
+			{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+			{ (1.0 / 5.0), 0.0, 0.0, 0.0, 0.0, 0.0 },
+			{ (3.0 / 40.0), (9.0 / 40.0), 0.0, 0.0, 0.0, 0.0 },
+			{ (44.0 / 45.0), (-56.0 / 15.0), (32.0 / 9.0), 0.0, 0.0, 0.0 },
+			{ (19372.0 / 6561.0), (-25360.0 / 2187.0), (64448.0 / 6561.0), (-212.0 / 729.0), 0.0, 0.0 },
+			{ (9017.0 / 3168.0), (-355.0 / 33.0), (46732.0 / 5247.0), (49.0 / 176.0), (-5103.0 / 18656.0), 0.0 },
+			{ (35.0 / 384.0), 0.0, (500.0 / 1113.0), (125.0 / 192.0), (-2187.0 / 6784.0), (11.0 / 84.0) }
+											 };
 
-		public static double[,] C = {   { (35.0 / 384.0), 0.0, (500.0 / 1113.0), (125.0 / 192.0), (-2187.0 / 6784.0), (11.0 / 84.0), 0.0 },
-										{ (5179.0 / 57600.0), 0.0, (7571.0 / 16695.0), (393.0 / 640.0), (-92097.0 / 339200.0), (187.0 / 2100.0), (1.0 / 40.0) }
-									};
-
-		public static double[] E = { (71.0 / 57600.0), 0.0, (-71.0 / 16695.0), (71.0 / 1920.0),
-									 (-17253.0 / 339200.0), (22.0 / 525.0), (-1.0 / 40.0) };
+		public static readonly double[,] C = {
+			{ (35.0 / 384.0), 0.0, (500.0 / 1113.0), (125.0 / 192.0), (-2187.0 / 6784.0), (11.0 / 84.0), 0.0 },
+			{ (5179.0 / 57600.0), 0.0, (7571.0 / 16695.0), (393.0 / 640.0), (-92097.0 / 339200.0), (187.0 / 2100.0), (1.0 / 40.0) }
+											 };
 		// --------------------------------------------------------------------------------
-		
+
+		// Function pointer for use by a 
+		unsafe public delegate*<double, in double[], ReactorFreeboard, double[]> fbOdePtr;
+
 		// Solver parameters
-		public double absTol = 1.0e-6;
-		public double relTol = 1.0e-3;
+		public static readonly double absTol = 1.0e-6;
+		public static readonly double relTol = 1.0e-3;
+
 		public double hMaxFrac = 0.1;
 		public double absh = 0.01;
 		public double tDir = 1.0;
@@ -48,8 +52,7 @@ namespace BasicBFB.Model.Common
 			}
 		}
 
-
-		// Algorithm based on MATLAB's ode45
+		// Algorithm based on MATLAB's ode45.  
 		public (List<double> t, List<double[]> Y) rk45(OdeDel dy, double[] tspan, double[] y0)
 		{
 			double deltaT = Math.Abs(tspan[1] - tspan[0]);
@@ -201,8 +204,6 @@ namespace BasicBFB.Model.Common
 					}
 				}	// Close of inner while loop for single step
 
-
-
 				if (isDone)
 				{
 					break;
@@ -211,7 +212,7 @@ namespace BasicBFB.Model.Common
 				// If there were no failures compute a new h
 				if (notFailed)
 				{
-					// Note that absh may shrink by 0.8, and that err may be 0.
+					// absh may shrink by 0.8, and that err may be 0.
 					//double temp = 1.25 * Math.Pow((err / relTol), pow);
 					temp = 1.25 * Math.Pow((err / relTol), pow);
 					if (temp > 0.2)
@@ -228,14 +229,11 @@ namespace BasicBFB.Model.Common
 				Y5.Add(y5Next);
 			}
 
-			//tOut.TrimExcess();
-			//Y5.TrimExcess();
-
 			return (tOut, Y5);
 		}
 
 
-		private double getInitialStepSize(in double[] y0, in double[] f0)
+		private static double getInitialStepSize(in double[] y0, in double[] f0)
 		{
 			double threshold = absTol / relTol;
 			double[] v = new double[y0.Length];
@@ -269,7 +267,7 @@ namespace BasicBFB.Model.Common
 			return maxabs;
 		}
 
-		private double getEps(double x)
+		private static double getEps(double x)
 		{
 			if (x == 0.0)
 			{
@@ -285,7 +283,7 @@ namespace BasicBFB.Model.Common
 		}
 
 
-		private double calcError(in double[] yOld, in double[] yNew, in double[] yE, ref double[] maxAbsY, ref double[] yErrRatio)
+		private static double calcError(in double[] yOld, in double[] yNew, in double[] yE, ref double[] maxAbsY, ref double[] yErrRatio)
 		{
 			double threshold = absTol / relTol;
 			double err = 0.0;

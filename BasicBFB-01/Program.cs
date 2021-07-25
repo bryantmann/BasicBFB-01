@@ -11,7 +11,7 @@ namespace BasicBFB
 		static void Main(string[] args)
 		{
 			GasifierParams param = ExampleData.gasifierParams();
-			ReactorBed reactorBed = new ReactorBed(param);
+			ReactorBed reactorBed = new ReactorBed(ref param);
 
 			//reactorBed.solve();
 			Effluent bedEffluent = reactorBed.calcEffluent();

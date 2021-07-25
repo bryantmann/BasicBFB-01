@@ -13,8 +13,8 @@ namespace BasicBFB.Testing
 	// Source: https://doi.org/10.1021/acs.energyfuels.6b03161
 	public static class ExampleData
 	{
-		private static double p0 = 1.115;   // bara
-		private static double T0 = 750.0;   // degC
+		private static readonly double p0 = 1.115;   // bara
+		private static readonly double T0 = 750.0;   // degC
 
 		// Main method to call to get parameters set up and ready for use
 		public static GasifierParams gasifierParams()
@@ -43,7 +43,7 @@ namespace BasicBFB.Testing
 
 
 		// Creates an Assay object for "sawdust" biomass feed
-		public static Assay sawdustAssay()
+		private static Assay sawdustAssay()
 		{
 			double[] w = new double[5] { 0.425, 0.063, 0.51, 0.002, 0.0 };
 			Assay assay = new Assay(w);
@@ -53,25 +53,6 @@ namespace BasicBFB.Testing
 			assay.fracFixedCarbon = 0.129;
 			assay.feedParticleSize = 500.0;     // microns
 			return assay;
-		}
-
-
-		
-		// 100% H2O at 100 C and 1 atm (T, P arbitrary chosen, can change)
-		// Note the flowrate here is 0.0
-		public static Stream mixedSteam2()
-		{
-			double[] y = new double[Stream.numComp];
-			for (int i = 0; i < y.Length; i++)
-			{
-				y[i] = 0.0;
-			}
-
-			y[(int)Component.H2O] = 0.9;     // Index for H2O
-			y[(int)Component.N2] = 0.1;
-
-			Stream steam = new Stream(y, temp: T0, press: p0);
-			return steam;
 		}
 	}
 }

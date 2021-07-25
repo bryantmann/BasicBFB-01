@@ -8,33 +8,23 @@ using BasicBFB.Model.Common;
 
 namespace BasicBFB.Model
 {
-	public class ReactorBed
+	public class ReactorBed : ReactorZone
 	{
 		// --------------------------------------------------------------------------------
 		//									PARAMETERS
 		// --------------------------------------------------------------------------------
-		public GasifierParams param;
-		public Pyrolysis pyro;
-		Stream pyroGas;
+		public Stream pyroGas { get; private set; }
 
-		public Effluent effluent { get; private set; }
-
-		public List<double> zList { get; private set; }	
-		public List<double[]> mDotList { get; private set; }	
-		// j = CO, CO2, CH4, H2, H2O, N2, O2, S, Tar
-
-		private double[] mz0;			// double[Stream.numComp]
-
-		public double mChar;			// Char holdup, kg
-		public double Lbed;				// Height of expanded fluidized bed, m
-		double epsAvg;					// Average void fraction of bed
-		public double mDotCharOut;		// Mass rate of char particles exiting the bed
+		public double mChar { get; set; }				// Char holdup, kg
+		public double Lbed { get; private set; }		// Height of expanded fluidized bed, m
+		public double epsAvg { get; private set; }		// Average void fraction of bed
+		public double mDotCharOut { get; private set; }	// Mass rate of char particles exiting the bed
 
 
 		// --------------------------------------------------------------------------------
 		//									CONSTRUCTOR
 		// --------------------------------------------------------------------------------
-		public ReactorBed(GasifierParams param)
+		public ReactorBed(ref GasifierParams param)
 		{
 			this.param = param;
 
@@ -62,13 +52,13 @@ namespace BasicBFB.Model
 		//							MAIN CALCULATION ALGORITHMS
 		// --------------------------------------------------------------------------------
 		
-		public Effluent calcEffluent()
-		{
-			solve();
-			return effluent;
-		}
+		//public Effluent calcEffluent()
+		//{
+		//	solve();
+		//	return effluent;
+		//}
 
-		public void solve()
+		public override void solve()
 		{
 			zList.Clear();
 			mDotList.Clear();
@@ -76,7 +66,8 @@ namespace BasicBFB.Model
 			double LbedErr = 1.0;
 			bool isConverged = false;
 
-			double[] zSpan = { 0.0, Lbed };
+			zSpan[0] = 0.0;
+			zSpan[1] = Lbed;
 			OdeDel ode = dmDot;
 			OdeSolver odeSolver = new OdeSolver();
 
@@ -139,20 +130,21 @@ namespace BasicBFB.Model
 
 
 		// --------------------------------------------------------------------------------
-		//							ODE FOR REACTION SYSTEM
+		//							ODE for REACTION SYSTEM
 		// --------------------------------------------------------------------------------
-		private double[] dmDot(double z, in double[] mz)
+		
+		protected override double[] dmDot(double z, in double[] mz)
 		{
 			double[] dmdz = new double[Stream.numComp];
 			double[] gasRates = gasifyRates(z, mz);
 			double eps = epsilon(z, mz);
 			double U = gasU(mz);
 
-			dmdz[(int)Component.CO] = dmCO(mz, gasRates, eps, U);
-			dmdz[(int)Component.CO2] = dmCO2(mz, gasRates, eps, U);
-			dmdz[(int)Component.CH4] = dmCH4(mz, gasRates, eps, U);
-			dmdz[(int)Component.H2] = dmH2(mz, gasRates, eps, U);
-			dmdz[(int)Component.H2O] = dmH2O(gasRates, eps);
+			dmdz[(int)Component.CO] = dmCO(mz, gasRates, U, eps);
+			dmdz[(int)Component.CO2] = dmCO2(mz, gasRates, U, eps);
+			dmdz[(int)Component.CH4] = dmCH4(mz, gasRates, U, eps);
+			dmdz[(int)Component.H2] = dmH2(mz, gasRates, U, eps);
+			dmdz[(int)Component.H2O] = dmH2O(mz, gasRates, U, eps);
 			dmdz[(int)Component.Tar] = dmTar(mz, eps, U);
 			dmdz[(int)Component.N2] = 0.0;
 			dmdz[(int)Component.O2] = 0.0;
@@ -179,23 +171,6 @@ namespace BasicBFB.Model
 			mDotCharOut = mChar / tauP;
 		}
 
-		//// d(tauP)/dz - derivative of particle residence time wrt z as a function of zIndex
-		//private double dtauP(double z, in double[] mz)
-		//{
-		//	double eps = epsilon(z, mz);
-		//	double U = gasU(mz);
-		//	return (1.0 - eps) / U;
-		//}
-
-		//// Mean solids residence time tauP
-		//private double meanTauP(in List<double> zs, in List<double[]> mdots)
-		//{
-		//	Del3 dtau = dtauP;
-		//	return Solver.integrate(dtau, zs, mdots);
-		//}
-
-		// Function used as integrand in mChar calculation method
-		// Parameter z is not used, it's just so Solver.integrate can be reused
 		private double sumCharRates(double z, in double[] mz)
 		{
 			double Tk = param.T + 273.15;       // T in Kelvin
@@ -247,58 +222,6 @@ namespace BasicBFB.Model
 
 
 		// --------------------------------------------------------------------------------
-		//							  GENERAL HELPER FUNCTIONS
-		// --------------------------------------------------------------------------------
-
-		// Gas phase mole fraction for specified component
-		// at z position corresponding to specified zIndex
-		private double yMolar(Component comp, in double[] mz)
-		{
-			double sumMoles = 0.0;
-
-			for (int j = 0; j < Stream.numComp; j++)
-			{
-				sumMoles += mz[j] / MW.all[j];
-			}
-
-			double y = mz[(int)comp] / MW.all[(int)comp];
-			y /= sumMoles;
-
-			return y;
-		}
-
-		// Partial pressure of specified component in gas phase 
-		// at z position for specified index (bara)
-		private double partialP(Component comp, in double[] mz)
-		{
-			return param.p * yMolar(comp, mz);
-		}
-
-		// Concentration of specified component in gas at zIndex [=] mol/m3
-		private double conc(Component comp, in double[] mz)
-		{
-			double Tkelvin = param.T + 273.15;
-			double c = 1.0e5 * partialP(comp, mz) / (Const.Rgas * Tkelvin);
-			return c;
-		}
-
-		// Superficial gas phase velocity at z[zIndex]
-		private double gasU(double[] mz)
-		{
-			double Tkelvin = param.T + 273.15;
-			double u = 0.0;
-
-			for (int j = 0; j < Stream.numComp; j++)
-			{
-				u += mz[j] / MW.all[j];
-			}
-
-			u *= (Const.Rgas * Tkelvin) / (1.0e5 * param.p * param.Axs); 
-			return u;
-		}
-
-
-		// --------------------------------------------------------------------------------
 		//						BUBBLING BED PROPERTY CALCULATIONS
 		// --------------------------------------------------------------------------------
 
@@ -314,7 +237,7 @@ namespace BasicBFB.Model
 		}
 
 		// Local bed voidage eps(z) based on zIndex
-		private double epsilon(double z, in double[] mz)
+		internal double epsilon(double z, in double[] mz)
 		{
 			double deltaU = gasU(mz) - param.Umf;
 			double dbTerm = 0.711 * Math.Sqrt(Const.g * bubbleSize(z, mz));
@@ -345,7 +268,7 @@ namespace BasicBFB.Model
 		// Gasification reaction rates returned in array
 		// Order is rC1, rC2, rC3, rSMR, rWGS
 		// Indexed the same as Reaction enumeration raw values
-		private double[] gasifyRates(double z, in double[] mz)
+		internal override double[] gasifyRates(double z, in double[] mz)
 		{
 			double[] rates = new double[5];		// rC1, rC2, rC3, rSMR, rWGS
 			double Tk = param.T + 273.15;       // T in Kelvin
@@ -372,7 +295,7 @@ namespace BasicBFB.Model
 
 
 		// CO rate expression (dmCO/dz)
-		private double dmCO(in double[] mz, in double[] gasRates, double eps, double U)
+		internal override double dmCO(in double[] mz, in double[] gasRates, double U, double eps)
 		{
 			double gTerm1 = eps * (gasRates[(int)Reaction.SMR] - gasRates[(int)Reaction.WGS]);
 			
@@ -395,7 +318,7 @@ namespace BasicBFB.Model
 
 
 		// CO2 rate expression (dmCO2/dz)
-		private double dmCO2(in double[] mz, in double[] gasRates, double eps, double U)
+		internal override double dmCO2(in double[] mz, in double[] gasRates, double U, double eps)
 		{
 			double gTerm1 = eps * gasRates[(int)Reaction.WGS];
 
@@ -418,7 +341,7 @@ namespace BasicBFB.Model
 
 
 		// CH4 rate expression (dmCH4/dz)
-		private double dmCH4(in double[] mz, in double[] gasRates, double eps, double U)
+		internal override double dmCH4(in double[] mz, in double[] gasRates, double U, double eps)
 		{
 			double gTerm1 = -gasRates[(int)Reaction.SMR] * eps;
 
@@ -440,7 +363,7 @@ namespace BasicBFB.Model
 		}
 
 		// H2 rate expression (dmH2/dz)
-		private double dmH2(in double[] mz, in double[] gasRates, double eps, double U)
+		internal override double dmH2(in double[] mz, in double[] gasRates, double U, double eps)
 		{
 			double gTerm1 = eps * (3.0 * gasRates[(int)Reaction.SMR] + gasRates[(int)Reaction.WGS]);
 
@@ -462,7 +385,7 @@ namespace BasicBFB.Model
 		}
 
 		// H2O rate expression (dmH2O/dz)
-		private double dmH2O(in double[] gasRates, double eps)
+		internal override double dmH2O(in double[] mz, in double[] gasRates, double U, double eps)
 		{
 			double mH2O = param.feedIn.flow * param.feedIn.fracMoisture;
 			double term1a = mH2O / Lbed;
@@ -479,9 +402,8 @@ namespace BasicBFB.Model
 			return term1a + term2a;
 		}
 
-
 		// Tar rate expression (dmTar/dz)
-		private double dmTar(in double[] mz, double eps, double U)
+		internal override double dmTar(in double[] mz, double U, double eps)
 		{
 			double term1 = pyro.tarYield * pyro.dryFeedIn.flow / Lbed;
 			double term2 = -pyro.kPyros[3] * (1.0 - pyro.gammaTarInert);
@@ -491,3 +413,23 @@ namespace BasicBFB.Model
 
 	}
 }
+
+
+
+//// d(tauP)/dz - derivative of particle residence time wrt z as a function of zIndex
+//private double dtauP(double z, in double[] mz)
+//{
+//	double eps = epsilon(z, mz);
+//	double U = gasU(mz);
+//	return (1.0 - eps) / U;
+//}
+
+//// Mean solids residence time tauP
+//private double meanTauP(in List<double> zs, in List<double[]> mdots)
+//{
+//	Del3 dtau = dtauP;
+//	return Solver.integrate(dtau, zs, mdots);
+//}
+
+// Function used as integrand in mChar calculation method
+// Parameter z is not used, it's just so Solver.integrate can be reused

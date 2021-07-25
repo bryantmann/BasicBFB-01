@@ -20,7 +20,6 @@ namespace BasicBFB.Model
 
 		public double z = 0.0;			// Height in reactor where effluent is measured
 
-		// TODO: Revise to accomodate extra char term in ReactorFreeboard.mDotList[i]
 
 		// --------------------------------------------------------------------------------
 		//									CONSTRUCTORS

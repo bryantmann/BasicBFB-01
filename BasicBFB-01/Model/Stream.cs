@@ -65,7 +65,7 @@ namespace BasicBFB.Model
 		// Default constructor.  temp in units of Celsius, and press in unit of bars
 		public Stream(double temp = 600.0, double press = 1.01325, bool isMolar = false)
 		{
-			x = new double[] { 0.2, 0.2, 0.2, 0.2, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0 };
+			x = new double[] { 0.25, 0.25, 0.25, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 			this.isMolar = isMolar;
 			this.p = press;
 			this.T = temp;
@@ -264,14 +264,19 @@ namespace BasicBFB.Model
 			{
 				double[] rates = new double[numComp];
 				double sumRates = 0.0;
-				for (int j = 0; j < numComp; j++)
+				int n = value.Length;
+				if (n > numComp)
+				{
+					n = numComp;
+				}
+				for (int j = 0; j < n; j++)
 				{
 					rates[j] = isMolar ? (value[j] / MW.all[j]) : value[j];
 					sumRates += rates[j];
 				}
 
 				flowrate = sumRates;
-				for (int j = 0; j < numComp; j++)
+				for (int j = 0; j < n; j++)
 				{
 					x[j] = (sumRates > 0.0) ? (rates[j] / sumRates) : 0.0;
 				}
@@ -304,14 +309,19 @@ namespace BasicBFB.Model
 			{
 				double[] rates = new double[numComp];
 				double sumRates = 0.0;
-				for (int j = 0; j < numComp; j++)
+				int n = value.Length;
+				if (n > numComp)
+				{
+					n = numComp;
+				}
+				for (int j = 0; j < n; j++)
 				{
 					rates[j] = isMolar ? value[j] : (value[j] * MW.all[j]);
 					sumRates += rates[j];
 				}
 
 				flowrate = sumRates;
-				for (int j = 0; j < numComp; j++)
+				for (int j = 0; j < n; j++)
 				{
 					x[j] = (sumRates > 0.0) ? (rates[j] / sumRates) : 0.0;
 				}
@@ -372,6 +382,18 @@ namespace BasicBFB.Model
 						sumRates += ni;
 					}
 					return sumRates;
+				}
+			}
+
+			set
+			{
+				if (isMolar)
+				{
+					flowrate = value ;
+				}
+				else
+				{
+					flowrate = value * avgMW;
 				}
 			}
 		}
