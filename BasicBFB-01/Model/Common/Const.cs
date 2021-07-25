@@ -12,7 +12,7 @@ namespace BasicBFB.Model.Common
 		public const double Rgas = 8.31446261815324;    // J / mol.K
 		public const double g = 9.81;                   // m/s2
 
-		public const double TOL = 1.0e-5;      // Relative tolerance for mChar and Lbed convergence
+		public const double TOL = 1.0e-6;      // Relative tolerance for mChar and Lbed convergence
 		public const double MAXITER = 50;		// Max number of iterations for loops in reactor solvers
 		public const double NORM_TOL = 1.0e-7;			// Normalized enough
 	}
@@ -25,6 +25,12 @@ namespace BasicBFB.Model.Common
 		public const double N = 14.00674 / 1000.0;
 		public const double O = 15.9994 / 1000.0;
 		public const double S = 32.065 / 1000.0;
+
+		//public const double C = 12.011;
+		//public const double H = 1.00794;
+		//public const double N = 14.00674;
+		//public const double O = 15.9994;
+		//public const double S = 32.065;
 
 		public const double CO = MW.C + MW.O;
 		public const double CO2 = MW.C + 2.0 * MW.O;

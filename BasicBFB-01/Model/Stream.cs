@@ -426,7 +426,7 @@ namespace BasicBFB.Model
 		}
 
 
-		// Total mass rate
+		// Total mass rate, kg/s
 		public double mDotTotal
 		{
 			get
@@ -483,6 +483,15 @@ namespace BasicBFB.Model
 			}
 		}
 
+		// Ideal gas density, g/cm3
+		public double rho
+		{
+			get
+			{
+				double rhoMolar = (p * 1.0e5) / (Const.Rgas * (T + 273.15));   // mol/m3
+				return rhoMolar * avgMW * 1.0e-3;
+			}
+		}
 	}
 }
 

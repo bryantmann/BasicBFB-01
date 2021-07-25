@@ -35,8 +35,8 @@ namespace BasicBFB.Model
 		public Stream dryGasOut { get; private set; }		// Dry, N2 free still
 		public Stream badGasOut { get; private set; }       // Moisture, N2, O2, H2S
 
-		//public double gammaTarInert = 0.22;
-		public double gammaTarInert = 0.0;
+		public double gammaTarInert = 0.22;
+		//public double gammaTarInert = 0.0;
 
 		// --------------------------------------------------------------------------
 		// -------------------------- Constructors, etc -----------------------------

@@ -39,5 +39,58 @@ namespace BasicBFB.Model
 			this.mDotList = new List<double[]>(200);
 		}
 
+
+		// --------------------------------------------------------------------------------
+		//							  GENERAL HELPER FUNCTIONS
+		// --------------------------------------------------------------------------------
+
+		// Gas phase mole fraction for specified component
+		// at z position corresponding to specified zIndex
+		private double yMolar(Component comp, in double[] mz)
+		{
+			double sumMoles = 0.0;
+
+			for (int j = 0; j < Stream.numComp; j++)
+			{
+				sumMoles += mz[j] / MW.all[j];
+			}
+
+			double y = mz[(int)comp] / MW.all[(int)comp];
+			y /= sumMoles;
+
+			return y;
+		}
+
+		// Partial pressure of specified component in gas phase 
+		// at z position for specified index (bara)
+		private double partialP(Component comp, in double[] mz)
+		{
+			return param.p * yMolar(comp, mz);
+		}
+
+		// Concentration of specified component in gas at zIndex [=] mol/m3
+		private double conc(Component comp, in double[] mz)
+		{
+			double Tkelvin = param.T + 273.15;
+			double c = 1.0e5 * partialP(comp, mz) / (Const.Rgas * Tkelvin);
+			return c;
+		}
+
+		// Superficial gas phase velocity at z[zIndex]
+		private double gasU(double[] mz)
+		{
+			double Tkelvin = param.T + 273.15;
+			double u = 0.0;
+
+			for (int j = 0; j < Stream.numComp; j++)
+			{
+				u += mz[j] / MW.all[j];
+			}
+
+			u *= (Const.Rgas * Tkelvin) / (1.0e5 * param.p * param.Axs);
+			return u;
+		}
+
+
 	}
 }

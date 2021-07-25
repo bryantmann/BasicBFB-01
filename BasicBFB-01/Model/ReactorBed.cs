@@ -169,7 +169,8 @@ namespace BasicBFB.Model
 		// Calculates new value for mChar and updates this object's mChar parameter value
 		private void updateMChar(in List<double> zs, in List<double[]> mdots)
 		{
-			double tauP = meanTauP(zs, mdots);
+			//double tauP = meanTauP(zs, mdots);
+			double tauP = param.tauP;
 			Del3 rCsum = sumCharRates;
 			double integral = Solver.integrate(rCsum, zs, mdots) / Lbed;
 			double denom = (1.0 / tauP) + integral;
@@ -178,20 +179,20 @@ namespace BasicBFB.Model
 			mDotCharOut = mChar / tauP;
 		}
 
-		// d(tauP)/dz - derivative of particle residence time wrt z as a function of zIndex
-		private double dtauP(double z, in double[] mz)
-		{
-			double eps = epsilon(z, mz);
-			double U = gasU(mz);
-			return (1.0 - eps) / U;
-		}
+		//// d(tauP)/dz - derivative of particle residence time wrt z as a function of zIndex
+		//private double dtauP(double z, in double[] mz)
+		//{
+		//	double eps = epsilon(z, mz);
+		//	double U = gasU(mz);
+		//	return (1.0 - eps) / U;
+		//}
 
-		// Mean solids residence time tauP
-		private double meanTauP(in List<double> zs, in List<double[]> mdots)
-		{
-			Del3 dtau = dtauP;
-			return Solver.integrate(dtau, zs, mdots);
-		}
+		//// Mean solids residence time tauP
+		//private double meanTauP(in List<double> zs, in List<double[]> mdots)
+		//{
+		//	Del3 dtau = dtauP;
+		//	return Solver.integrate(dtau, zs, mdots);
+		//}
 
 		// Function used as integrand in mChar calculation method
 		// Parameter z is not used, it's just so Solver.integrate can be reused
@@ -305,7 +306,7 @@ namespace BasicBFB.Model
 		private double bubbleSize(double z, in double[] mz)
 		{
 			double db = 0.0;
-			double deltaU = gasU(mz) - param.U0;
+			double deltaU = gasU(mz) - param.Umf;
 			double zTerm = z + 4.0 * Math.Sqrt((param.Axs / ((double)param.Nor)));
 			db = 0.54 * Math.Pow(Const.g, -0.2) * Math.Pow(deltaU, 0.4);
 			db *= Math.Pow(zTerm, 0.8);
@@ -315,7 +316,7 @@ namespace BasicBFB.Model
 		// Local bed voidage eps(z) based on zIndex
 		private double epsilon(double z, in double[] mz)
 		{
-			double deltaU = gasU(mz) - param.U0;
+			double deltaU = gasU(mz) - param.Umf;
 			double dbTerm = 0.711 * Math.Sqrt(Const.g * bubbleSize(z, mz));
 			double denom = 1.0 + deltaU / dbTerm;
 			return 1.0 - (1.0 - param.epsMF) / denom;

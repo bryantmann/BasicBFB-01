@@ -48,12 +48,20 @@ Equations for Model:
 	. Mchar - an integral equation (need an integration algorithm in Solver)
 
 Algorithm:
-	. Start with a guess for mChar (user input)
+. Overall goal is for mDot(char) = 0 at freeboard section effluent
+. Guess alpha = 0.9 (char conversion)
+. From alpha, calculate avg solids restime tauP using td and te
+	. Start with a guess for MChar (user input), at current fixed tauP(alpha)
 	. Set local mCharOld = mChar
 	. Solve system of ODEs -> populates z and mDot lists
 	. Calculate mChar using mDot values
 	. Compare mCharErr = abs(mChar - mCharOld) / mChar
 	. Repeat until mCharErr <= charTol (start with modest 1e-3)
+	. Next calculate new Lbed value
+	. Repeat char and Lbed loops until both mChar and Lbed converge
+. Assuming char fines travel with gas in freeboard, calculate char conversion
+  in freeboard section to obtain mCharOut at z = Ltot
+. Using zRiddr root finding algorithm, optimize alpha/tauP so that mCharOut = 0
 
 Results
 	. Clean dry gas mole fractions in effluent

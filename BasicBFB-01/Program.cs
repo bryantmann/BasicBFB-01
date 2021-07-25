@@ -13,7 +13,8 @@ namespace BasicBFB
 			GasifierParams param = ExampleData.gasifierParams();
 			ReactorBed reactorBed = new ReactorBed(param);
 
-			reactorBed.solve();
+			//reactorBed.solve();
+			Effluent bedEffluent = reactorBed.calcEffluent();
 
 			//Pyrolysis pyro = new Pyrolysis(param);
 			//pyro.pyrolize();
