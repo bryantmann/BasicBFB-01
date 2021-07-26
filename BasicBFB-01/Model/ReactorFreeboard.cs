@@ -47,13 +47,7 @@ namespace BasicBFB.Model
 		// --------------------------------------------------------------------------------
 		//							MAIN CALCULATION ALGORITHMS
 		// --------------------------------------------------------------------------------
-		//public Effluent calcEffluent()
-		//{
-		//	solve();
-		//	return effluent;
-		//}
 
-		// TODO: Fill in this dude 
 		unsafe override public void solve()
 		{
 			//zList.Clear();
@@ -65,7 +59,7 @@ namespace BasicBFB.Model
 			OdeSolver odeSolver = new OdeSolver();
 			odeSolver.rk45b(fbOdePtr, zSpan, mz0, this, ref zList, ref mDotList);
 
-			// Populate effluent container with results at z = L0
+			// Populate effluent container with results at z = Ltot
 			int iMax = zList.Count - 1;     // Last index of zList and mDotList
 			double[] mDotOut = mDotList[iMax];
 			int iChar = mDotOut.Length - 1;

@@ -59,7 +59,7 @@ namespace BasicBFB.Model
 		//	return effluent;
 		//}
 
-		public override void solve()
+		unsafe public override void solve()
 		{
 			zList.Clear();
 			mDotList.Clear();
@@ -69,7 +69,8 @@ namespace BasicBFB.Model
 
 			zSpan[0] = 0.0;
 			zSpan[1] = Lbed;
-			OdeDel ode = dmDot;
+			//OdeDel ode = dmDot;
+			delegate*<double, in double[], ReactorZone, double[]> bedOdePtr = &ReactorODEs.dmBed;
 			OdeSolver odeSolver = new OdeSolver();
 
 			int iter0 = 0;
@@ -81,14 +82,22 @@ namespace BasicBFB.Model
 				iter1 = 0;
 				iter2 = 0;
 
+				Console.WriteLine($"Starting outer loop iter0 = {iter0}...");
 				double mCharOld = mChar;
 				while ((mCharErr > Const.TOL) && (iter1 < Const.MAXITER))
 				{
 					iter1++;
-					(zList, mDotList) = odeSolver.rk45(ode, zSpan, mz0);
+					//(zList, mDotList) = odeSolver.rk45(ode, zSpan, mz0);
+					odeSolver.rk45b(bedOdePtr, zSpan, mz0, this, ref zList, ref mDotList);
 					updateMChar(zList, mDotList);
 					mCharErr = Math.Abs(mChar - mCharOld) / mChar;
 					mCharOld = mChar;
+				}
+				if (iter1 < Const.MAXITER) {
+					Console.WriteLine($"\tConverged Loop 1: mCharErr = {mCharErr:g2} after {iter1} cycles");
+				} else
+				{
+					Console.WriteLine($"\tLoop 1 did not converge: mCharErr = {mCharErr:g2} after {iter1} cycles");
 				}
 
 				double LbedOld = Lbed;
@@ -102,9 +111,17 @@ namespace BasicBFB.Model
 					iter2++;
 					LbedOld = Lbed;
 					zSpan[1] = Lbed;
-					(zList, mDotList) = odeSolver.rk45(ode, zSpan, mz0);
+					odeSolver.rk45b(bedOdePtr, zSpan, mz0, this, ref zList, ref mDotList);
 					updateLbed(zList, mDotList);
 					LbedErr = Math.Abs(Lbed - LbedOld) / Lbed;
+				}
+				if (iter2 < Const.MAXITER)
+				{
+					Console.WriteLine($"\tConverged Loop 2: LbedErr = {LbedErr:g2} after {iter2} cycles");
+				}
+				else
+				{
+					Console.WriteLine($"\tLoop 2 did not converge: LbedErr = {LbedErr:g2} after {iter2} cycles");
 				}
 
 				if (!isConverged)
@@ -117,13 +134,16 @@ namespace BasicBFB.Model
 
 			if (isConverged)
 			{
-				Console.WriteLine("ReactorBed solve() converged after {0} cycles", iter0);
+				Console.WriteLine("\nReactorBed solve() converged after {0} cycles", iter0);
+				Console.WriteLine($"\tmCharErr = {mCharErr:g2} after {iter1} cycles");
+				Console.WriteLine($"\tLbedErr = {LbedErr:g2} after {iter2} cycles");
 				int iMax = zList.Count - 1;     // Last index of zList and mDotList
 				this.effluent = new Effluent(mDotList[iMax], zList[iMax], param, pyro, mDotCharOut);
 			} else
 			{
-				Console.WriteLine("ReactorBed solve() failed to converge!");
-				Console.WriteLine($"mCharErr = {mCharErr:g4}, LbedErr = {LbedErr:g4}");
+				
+				Console.WriteLine("\nReactorBed solve() failed to converge!");
+				Console.WriteLine($"\tmCharErr = {mCharErr:g2}, LbedErr = {LbedErr:g2}");
 				//this.effluent = new Effluent();
 			}
 		}
