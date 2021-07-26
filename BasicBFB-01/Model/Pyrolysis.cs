@@ -252,8 +252,6 @@ namespace BasicBFB.Model
 					tarCHO[1] = tarFracFromGas(Element.H, gasCHO[1]);
 					tarCHO[2] = tarFracFromGas(Element.O, gasCHO[2]);
 					double sumX = tarCHO[0] + tarCHO[1] + tarCHO[2];
-
-					Console.WriteLine($"Added (C, H, O) = ({gasCHO[0]:F3}, {gasCHO[1]:F3}, {gasCHO[2]:F3}) with sumY = {sumY:F4} and sumX = {sumX:F4}");
 				}
 			}
 

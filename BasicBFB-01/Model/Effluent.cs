@@ -14,6 +14,7 @@ namespace BasicBFB.Model
 
 		public Stream productGas;		// Only CO, CO2, CH4 and H2 (dry, mole basis)
 		public double[] productYields;  // Wt frac. dry product gas, tar, and char
+		public double[] yieldsVsDryBM;
 		public double mDotProducts = 0.0;
 
 		public double mDotCharOut = 0.0;
@@ -54,7 +55,8 @@ namespace BasicBFB.Model
 
 
 		// Constructor from mass rates in total vapor
-		public Effluent(double[] mDot, double zOut, GasifierParams param, double mDotCharOut = 0.0)
+		public Effluent(double[] mDot, double zOut, in GasifierParams param, 
+						in Pyrolysis pyro, double mDotCharOut = 0.0)
 		{
 			this.z = zOut;
 			this.mDotCharOut = mDotCharOut;
@@ -69,6 +71,12 @@ namespace BasicBFB.Model
 			productYields[(int)Common.Phase.Gas] = productGas.mDotTotal / mDotProducts;
 			productYields[(int)Common.Phase.Tar] = mDot[(int)Common.Component.Tar] / mDotProducts;
 			productYields[(int)Common.Phase.Char] = mDotCharOut / mDotProducts;
+
+			double mB = pyro.dryFeedIn.flow;
+			yieldsVsDryBM = new double[3];
+			yieldsVsDryBM[(int)Common.Phase.Gas] = productGas.mDotTotal / mB;
+			yieldsVsDryBM[(int)Common.Phase.Tar] = mDot[(int)Common.Component.Tar] / mB;
+			yieldsVsDryBM[(int)Common.Phase.Char] = mDotCharOut / mB;
 		}
 
 	}

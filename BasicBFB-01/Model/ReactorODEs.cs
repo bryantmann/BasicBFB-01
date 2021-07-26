@@ -14,7 +14,7 @@ namespace BasicBFB.Model
 		// delegate* function pointers 
 
 		// ODE for ReactorBed's system of reactions
-		internal static double[] dmBed(double z, in double[] mz, ReactorBed rxr)
+		internal static double[] dmBed(double z, in double[] mz, ReactorZone rxr)
 		{
 			double[] dmdz = new double[Stream.numComp];
 			double[] gasRates = rxr.gasifyRates(z, mz);
@@ -38,7 +38,7 @@ namespace BasicBFB.Model
 		//unsafe static delegate*<double, in double[], ReactorFreeboard, double[]> fbOdePtr;
 
 		// ODE for ReactorFreeboard's system of reactions
-		internal static double[] dmFreeboard(double z, in double[] mz, ReactorFreeboard rxr)
+		internal static double[] dmFreeboard(double z, in double[] mz, ReactorZone rxr)
 		{
 			double[] dmdz = new double[Stream.numComp + 1];
 			double[] gasRates = rxr.gasifyRates(z, mz);

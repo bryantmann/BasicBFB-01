@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using BasicBFB.Model;
 using BasicBFB.Testing;
+using Common = BasicBFB.Model.Common;
 
 namespace BasicBFB
 {
@@ -11,37 +12,45 @@ namespace BasicBFB
 		static void Main(string[] args)
 		{
 			GasifierParams param = ExampleData.gasifierParams();
-			ReactorBed reactorBed = new ReactorBed(ref param);
+			ReactorBed bed = new ReactorBed(ref param);
+			Effluent bedEffluent = bed.calcEffluent();
 
-			//reactorBed.solve();
-			Effluent bedEffluent = reactorBed.calcEffluent();
+			ReactorFreeboard freeboard = new ReactorFreeboard(param, bed.pyro, bedEffluent);
+			Effluent finalEffluent = freeboard.calcEffluent();
 
-			//Pyrolysis pyro = new Pyrolysis(param);
-			//pyro.pyrolize();
+			double pctGas = 100.0 * finalEffluent.productYields[0];
+			double pctTar = 100.0 * finalEffluent.productYields[1];
+			double pctChar = 100.0 * finalEffluent.productYields[2];
 
-			//double[] wTarCHO = pyro.tarCHO.w;
-			//double[] wGasCHO = pyro.dryGasCHO.w;
-			//double[] xGas = pyro.dryGasOut.x;
+			double gasToFd = finalEffluent.yieldsVsDryBM[0];
+			double tarToFd = finalEffluent.yieldsVsDryBM[1];
+			double charToFd = finalEffluent.yieldsVsDryBM[2];
 
-			//string dashes = "--------------------";
-			//dashes = dashes + dashes + dashes + dashes;
-			//Console.WriteLine("\n" + dashes);
+			double pctCO = 100.0 * finalEffluent.productGas.x[(int)Common.Component.CO];
+			double pctCO2 = 100.0 * finalEffluent.productGas.x[(int)Common.Component.CO2];
+			double pctCH4 = 100.0 * finalEffluent.productGas.x[(int)Common.Component.CH4];
+			double pctH2 = 100.0 * finalEffluent.productGas.x[(int)Common.Component.H2];
 
-			//string s = "";
-			//s = String.Format("Tar wC: {0:g3}  wH: {1:g3}  wO: {2:g3}",
-			//					wTarCHO[0], wTarCHO[1], wTarCHO[2]);
-			//s += "\n";
+			string dash80 = new String('=', 80);
+			string report = "\n" + dash80 + "\n\n";
 
-			//s += String.Format("Gas wC: {0:g3}  wH: {1:g3}  wO: {2:g3}",
-			//					wGasCHO[0], wGasCHO[1], wGasCHO[2]);
-			//s += "\n\n";
+			report += "Full reactor model complete using fixed alpha = 0.9\n\n";
 
-			//s += String.Format("Gas xCO:  {0:g3}   xCO2: {1:g3}", xGas[0], xGas[1]);
-			//s += "\n";
-			//s += String.Format("    xCH4: {0:g3}   xH2:  {1:g3}", xGas[2], xGas[3]);
-			//s += "\n" + dashes + "\n";
-			//Console.WriteLine(s);
+			report += "Product yields (dry mass basis):\n";
+			report += $"\t--->  Gas:  {pctGas:F2} %\t\t{gasToFd:F3} kg/kg vs feed\n";
+			report += $"\t--->  Tar:  {pctTar:F2} %\t\t{tarToFd:F3} kg/kg vs feed\n";
+			report += $"\t--->  Char: {pctChar:F2} %\t\t{charToFd:F3} kg/kg vs feed\n\n";
 
+			report += "Product gas composition (volume basis):\n";
+			report += $"\t--->  CO:  {pctCO:F2} %\n";
+			report += $"\t--->  CO2: {pctCO2:F2} %\n";
+			report += $"\t--->  CH4: {pctCH4:F2} %\n";
+			report += $"\t--->  H2:  {pctH2:F2} %\n";
+
+			report += "\n" + dash80 + "\n\n";
+			report += "Thank you and have a nice day!";
+
+			Console.WriteLine(report);
 			Console.ReadKey();
 		}
 	}

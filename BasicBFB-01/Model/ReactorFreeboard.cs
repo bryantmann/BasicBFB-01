@@ -24,15 +24,23 @@ namespace BasicBFB.Model
 		public ReactorFreeboard(in GasifierParams param, in Pyrolysis pyro, in Effluent bedEffluent)
 		{
 			this.param = param;
-			this.pyro = pyro;		// Copied from ReactorBed.pyro
-			//this.pyro = new Pyrolysis(param);
-			this.bedEffluentIn = bedEffluent;
-			this.effluent = new Effluent();
-			this.zSpan = new double[2] { bedEffluentIn.z, param.Ltot };
+			this.pyro = pyro;		// To be copied from ReactorBed.pyro
 
-			this.mz0 = bedEffluent.total.mDot;
-			this.zList = new List<double>(200);
-			this.mDotList = new List<double[]>(200);
+			bedEffluentIn = bedEffluent;
+			effluent = new Effluent();
+			zSpan = new double[2] { bedEffluentIn.z, param.Ltot };
+
+			int N = Stream.numComp + 1;
+			this.mz0 = new double[N];
+			double[] mDotGasIn = bedEffluent.total.mDot;
+			for (int j = 0; j < mDotGasIn.Length; j++)
+			{
+				mz0[j] = mDotGasIn[j];
+			}
+			mz0[N-1] = bedEffluent.mDotCharOut;
+
+			zList = new List<double>(200);
+			mDotList = new List<double[]>(200);
 		}
 
 
@@ -48,13 +56,20 @@ namespace BasicBFB.Model
 		// TODO: Fill in this dude 
 		unsafe override public void solve()
 		{
+			//zList.Clear();
+			//mDotList.Clear();
+			zSpan[0] = bedEffluentIn.z;
+			zSpan[1] = param.Ltot;
+
+			delegate*<double, in double[], ReactorZone, double[]> fbOdePtr = &ReactorODEs.dmFreeboard;
 			OdeSolver odeSolver = new OdeSolver();
-			odeSolver.fbOdePtr = &ReactorODEs.dmFreeboard;
+			odeSolver.rk45b(fbOdePtr, zSpan, mz0, this, ref zList, ref mDotList);
 
-
-			zList.Clear();
-			mDotList.Clear();
-
+			// Populate effluent container with results at z = L0
+			int iMax = zList.Count - 1;     // Last index of zList and mDotList
+			double[] mDotOut = mDotList[iMax];
+			int iChar = mDotOut.Length - 1;
+			effluent = new Effluent(mDotOut, zList[iMax], param, pyro, mDotOut[iChar]);
 		}
 
 

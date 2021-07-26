@@ -10,14 +10,14 @@ namespace BasicBFB.Model
 {
 	public class ReactorZone
 	{
-		public GasifierParams param { get; set; }
-		public Pyrolysis pyro { get; set; }
+		public GasifierParams param;
+		public Pyrolysis pyro;
 
 		protected double[] zSpan { get; init; }		// Range of z values for use by ODE solver	
-		protected double[] mz0 { get; set; }		// Initial condition = Mass rates from reactor bed out
+		protected double[] mz0 { get; set; }        // Initial condition = Mass rates from reactor bed out
 
-		public List<double> zList { get; protected set; }			// Heights z[i] mDotList[i] 
-		public List<double[]> mDotList { get; protected set; }		// Mass flow rate solutions to ODE
+		public List<double> zList;						// Heights z[i] mDotList[i] 
+		public List<double[]> mDotList;					// Mass flow rate solutions to ODE
 		public Effluent effluent { get; protected set; }            // Section's effluent stream data
 
 
@@ -32,14 +32,14 @@ namespace BasicBFB.Model
 		}
 		public virtual void solve()
 		{
-			Console.WriteLine("Called solve() method from ReactorSection framework class!");
+			Console.WriteLine("Called solve() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the solve() method");
 		}
 
 		protected virtual double[] dmDot(double z, in double[] mz)
 		{
 			double[] nothing = new double[0];
-			Console.WriteLine("Called dmDot() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmDot() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmDot() method");
 			return nothing;
 		}
@@ -96,6 +96,14 @@ namespace BasicBFB.Model
 			return u;
 		}
 
+		// Local bed voidage eps(z) based on zIndex
+		internal virtual double epsilon(double z, in double[] mz)
+		{
+			Console.WriteLine("Called epsilon() method from ReactorZone framework class!");
+			Console.WriteLine("Ensure the child classes correctly override the epsilon() method");
+			return 0.0;
+		}
+
 
 		// --------------------------------------------------------------------------------
 		//						REACTION RATE HELPERS - To be overriden
@@ -107,7 +115,7 @@ namespace BasicBFB.Model
 		internal virtual double[] gasifyRates(double z, in double[] mz)
 		{
 			double[] nothing = new double[0];
-			Console.WriteLine("Called gasifyRates() method from ReactorSection framework class!");
+			Console.WriteLine("Called gasifyRates() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the gasifyRates() method");
 			return nothing;
 		}
@@ -115,7 +123,7 @@ namespace BasicBFB.Model
 		// CO rate expression (dmCO/dz)
 		internal virtual double dmCO(in double[] mz, in double[] gasRates, double U, double eps)
 		{
-			Console.WriteLine("Called dmCO() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmCO() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmCO() method");
 			return 0.0;
 		}
@@ -123,7 +131,7 @@ namespace BasicBFB.Model
 		// CO2 rate expression (dmCO2/dz)
 		internal virtual double dmCO2(in double[] mz, in double[] gasRates, double U, double eps)
 		{
-			Console.WriteLine("Called dmCO2() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmCO2() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmCO2() method");
 			return 0.0;
 		}
@@ -131,7 +139,7 @@ namespace BasicBFB.Model
 		// CH4 rate expression (dmCH4/dz)
 		internal virtual double dmCH4(in double[] mz, in double[] gasRates, double U, double eps)
 		{
-			Console.WriteLine("Called dmCH4() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmCH4() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmCH4() method");
 			return 0.0;
 		}
@@ -139,7 +147,7 @@ namespace BasicBFB.Model
 		// H2 rate expression (dmH2/dz)
 		internal virtual double dmH2(in double[] mz, in double[] gasRates, double U, double eps)
 		{
-			Console.WriteLine("Called dmH2() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmH2() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmH2() method");
 			return 0.0;
 		}
@@ -147,7 +155,7 @@ namespace BasicBFB.Model
 		// H2O rate expression (dmH2O/dz)
 		internal virtual double dmH2O(in double[] mz, in double[] gasRates, double U, double eps)
 		{
-			Console.WriteLine("Called dmH2O() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmH2O() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmH2O() method");
 			return 0.0;
 		}
@@ -155,7 +163,7 @@ namespace BasicBFB.Model
 		// Tar rate expression (dmTar/dz)
 		internal virtual double dmTar(in double[] mz, double U, double eps)
 		{
-			Console.WriteLine("Called dmTar() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmTar() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmTar() method");
 			return 0.0;
 		}
@@ -163,7 +171,7 @@ namespace BasicBFB.Model
 		// Char rate expression (dmChar/dz)
 		internal virtual double dmChar(in double[] mz, double[] gasRates, double U)
 		{
-			Console.WriteLine("Called dmChar() method from ReactorSection framework class!");
+			Console.WriteLine("Called dmChar() method from ReactorZone framework class!");
 			Console.WriteLine("Ensure the child classes correctly override the dmChar() method");
 			return 0.0;
 		}

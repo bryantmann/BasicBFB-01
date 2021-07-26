@@ -31,6 +31,7 @@ namespace BasicBFB.Model
 			this.pyro = new Pyrolysis(param);
 			this.zList = new List<double>(200);
 			this.mDotList = new List<double[]>(200);
+			this.zSpan = new double[2];
 
 			pyro.pyrolize();
 
@@ -118,7 +119,7 @@ namespace BasicBFB.Model
 			{
 				Console.WriteLine("ReactorBed solve() converged after {0} cycles", iter0);
 				int iMax = zList.Count - 1;     // Last index of zList and mDotList
-				this.effluent = new Effluent(mDotList[iMax], zList[iMax], param, mDotCharOut);
+				this.effluent = new Effluent(mDotList[iMax], zList[iMax], param, pyro, mDotCharOut);
 			} else
 			{
 				Console.WriteLine("ReactorBed solve() failed to converge!");
@@ -237,7 +238,7 @@ namespace BasicBFB.Model
 		}
 
 		// Local bed voidage eps(z) based on zIndex
-		internal double epsilon(double z, in double[] mz)
+		internal override double epsilon(double z, in double[] mz)
 		{
 			double deltaU = gasU(mz) - param.Umf;
 			double dbTerm = 0.711 * Math.Sqrt(Const.g * bubbleSize(z, mz));
